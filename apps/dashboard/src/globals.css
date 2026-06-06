@@ -10,10 +10,21 @@ body,
 .maplibregl-popup-content {
 	padding: 12px 14px;
 	border-radius: 8px;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+	background: #111;
+	color: #e2e8f0;
+}
+
+.maplibregl-popup-tip {
+	border-top-color: #111;
 }
 
 .maplibregl-ctrl-group {
 	border-radius: 8px;
 	overflow: hidden;
+	background: #111;
+}
+
+.maplibregl-ctrl-group button {
+	filter: invert(1);
 }

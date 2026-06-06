@@ -27,6 +27,7 @@ export type DispatchUnit = {
 	stationId: string;
 	stationName: string;
 	from: Coord;
+	route: [number, number][];
 	etaMinutes: number;
 	createdAt: number;
 	arrived: boolean;

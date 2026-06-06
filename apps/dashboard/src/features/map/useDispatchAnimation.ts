@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { DEMO_TIME_SCALE } from "~/config/hk";
 import { computeRemainingEtaMinutes, computeUnitProgress } from "~/data/seed";
 import type { Incident } from "~/domain/types";
-import { interpolate } from "~/lib/geo";
+import { interpolateAlongRoute, sliceRouteToProgress } from "~/lib/geo";
+import { unitRoute } from "~/lib/routing";
 import { useIncidentsStore } from "~/store/incidents";
 
 export const formatEta = (minutes: number) => {
@@ -32,7 +33,9 @@ export const useDispatchAnimation = (
 				for (const incident of incidents) {
 					for (const unit of incident.dispatchUnits) {
 						const progress = computeUnitProgress(unit, now);
-						const pos = interpolate(unit.from, { lat: incident.lat, lng: incident.lng }, progress);
+						const destination = { lat: incident.lat, lng: incident.lng };
+						const route = unitRoute(unit, destination);
+						const pos = interpolateAlongRoute(route, progress);
 						unitMarkersRef.current?.get(unit.id)?.setLngLat([pos.lng, pos.lat]);
 
 						const source = map.getSource(`dispatch-line-${unit.id}`) as GeoJSONSource | undefined;
@@ -42,10 +45,7 @@ export const useDispatchAnimation = (
 								properties: {},
 								geometry: {
 									type: "LineString",
-									coordinates: [
-										[unit.from.lng, unit.from.lat],
-										[pos.lng, pos.lat],
-									],
+									coordinates: sliceRouteToProgress(route, progress),
 								},
 							});
 						}

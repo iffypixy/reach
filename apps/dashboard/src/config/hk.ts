@@ -1,7 +1,8 @@
 export const HK_CENTER = { lng: 114.1694, lat: 22.3193 } as const;
-export const HK_ZOOM = 11;
+export const HK_ZOOM = 10.8;
 export const HK_PITCH = 55;
 export const HK_BEARING = -17;
+export const HK_MIN_ZOOM = 10;
 
 export const HK_BOUNDS = {
 	minLng: 113.83,

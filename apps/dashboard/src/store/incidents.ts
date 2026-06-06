@@ -4,6 +4,7 @@ import { createDispatchUnits, generateSeedIncidents } from "~/data/seed";
 import { INCIDENT_LABELS, INCIDENT_SERVICES } from "~/domain/mapping";
 import type { AddIncidentInput, Incident } from "~/domain/types";
 import { bus } from "~/events/bus";
+import { hydrateIncidentRoutes, type RouteCoords } from "~/lib/routing";
 
 type IncidentsState = {
 	incidents: Incident[];
@@ -11,6 +12,16 @@ type IncidentsState = {
 	loadSeed: () => void;
 	addIncident: (input: AddIncidentInput) => Incident;
 	markUnitArrived: (incidentId: string, unitId: string) => void;
+	updateUnitRoute: (incidentId: string, unitId: string, route: RouteCoords) => void;
+};
+
+const fetchRoutesInBackground = (
+	incident: Incident,
+	updateUnitRoute: IncidentsState["updateUnitRoute"],
+) => {
+	void hydrateIncidentRoutes(incident, (unitId, route) =>
+		updateUnitRoute(incident.id, unitId, route),
+	);
 };
 
 export const useIncidentsStore = create<IncidentsState>()(
@@ -21,10 +32,9 @@ export const useIncidentsStore = create<IncidentsState>()(
 
 			loadSeed: () => {
 				const state = get();
-				if (state.seedLoaded) return;
-				if (state.incidents.length === 0)
-					set({ incidents: generateSeedIncidents(), seedLoaded: true });
-				else set({ seedLoaded: true });
+				const incidents = state.incidents.length === 0 ? generateSeedIncidents() : state.incidents;
+				if (!state.seedLoaded) set({ incidents, seedLoaded: true });
+				for (const incident of incidents) fetchRoutesInBackground(incident, get().updateUnitRoute);
 			},
 
 			addIncident: (input) => {
@@ -46,6 +56,7 @@ export const useIncidentsStore = create<IncidentsState>()(
 				};
 
 				set({ incidents: [...get().incidents, incident] });
+				fetchRoutesInBackground(incident, get().updateUnitRoute);
 				bus.emit("incident:created", {
 					incidentId: incident.id,
 					category: incident.category,
@@ -65,6 +76,21 @@ export const useIncidentsStore = create<IncidentsState>()(
 									...incident,
 									dispatchUnits: incident.dispatchUnits.map((unit) =>
 										unit.id === unitId ? { ...unit, arrived: true } : unit,
+									),
+								},
+					),
+				});
+			},
+
+			updateUnitRoute: (incidentId, unitId, route) => {
+				set({
+					incidents: get().incidents.map((incident) =>
+						incident.id !== incidentId
+							? incident
+							: {
+									...incident,
+									dispatchUnits: incident.dispatchUnits.map((unit) =>
+										unit.id === unitId ? { ...unit, route } : unit,
 									),
 								},
 					),

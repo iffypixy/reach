@@ -8,6 +8,7 @@ import {
 } from "~/domain/mapping";
 import type { DispatchUnit, Incident, IncidentCategory, ServiceCategory } from "~/domain/types";
 import { nearestStation, randomCoordInHk } from "~/lib/geo";
+import { straightRoute } from "~/lib/routing";
 
 const SEVERITIES = ["low", "medium", "high"] as const;
 
@@ -20,12 +21,14 @@ const buildDispatchUnits = (
 ): DispatchUnit[] =>
 	services.map((service) => {
 		const station = nearestStation(incidentCoord, service, STATIONS);
+		const from = { lat: station.lat, lng: station.lng };
 		return {
 			id: crypto.randomUUID(),
 			service,
 			stationId: station.id,
 			stationName: station.name,
-			from: { lat: station.lat, lng: station.lng },
+			from,
+			route: straightRoute(from, incidentCoord),
 			etaMinutes: randomEtaMinutes(),
 			createdAt,
 			arrived: false,

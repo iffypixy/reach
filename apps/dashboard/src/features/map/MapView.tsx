@@ -8,14 +8,22 @@ import { useEffect, useRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { HK_BEARING, HK_CENTER, HK_PITCH, HK_ZOOM, MAP_STYLE } from "~/config/hk";
+import { HK_BEARING, HK_CENTER, HK_MIN_ZOOM, HK_PITCH, HK_ZOOM, MAP_STYLE } from "~/config/hk";
 import { computeUnitProgress } from "~/data/seed";
-import { STATIONS } from "~/data/stations";
 import { SERVICE_COLORS } from "~/domain/mapping";
 import type { Coord, Incident } from "~/domain/types";
 import { IncidentPopupContent } from "~/features/incidents/IncidentPopup";
+import {
+	addEmergencyBuildingLayers,
+	applyMapTheme,
+	fitHongKong,
+	HK_MAX_BOUNDS,
+	updateEmergencyBuildingFootprints,
+} from "~/features/map/mapTheme";
+import { fetchEmergencyFootprints } from "~/lib/overpass";
 import { useDispatchAnimation } from "~/features/map/useDispatchAnimation";
-import { interpolate } from "~/lib/geo";
+import { interpolateAlongRoute } from "~/lib/geo";
+import { unitRoute } from "~/lib/routing";
 import { useIncidentsStore } from "~/store/incidents";
 
 type Props = {
@@ -33,15 +41,6 @@ type PointFeatureCollection = {
 		geometry: { type: "Point"; coordinates: [number, number] };
 	}>;
 };
-
-const stationsGeoJson = (): PointFeatureCollection => ({
-	type: "FeatureCollection",
-	features: STATIONS.map((s) => ({
-		type: "Feature",
-		properties: { id: s.id, name: s.name, service: s.service },
-		geometry: { type: "Point", coordinates: [s.lng, s.lat] },
-	})),
-});
 
 const incidentsGeoJson = (incidents: Incident[]): PointFeatureCollection => ({
 	type: "FeatureCollection",
@@ -105,6 +104,8 @@ export const MapView = ({ isAddingMode, pendingLocation, onMapClick, flyToLocati
 			style: MAP_STYLE,
 			center: [HK_CENTER.lng, HK_CENTER.lat],
 			zoom: HK_ZOOM,
+			minZoom: HK_MIN_ZOOM,
+			maxBounds: HK_MAX_BOUNDS,
 			pitch: HK_PITCH,
 			bearing: HK_BEARING,
 		});
@@ -112,41 +113,11 @@ export const MapView = ({ isAddingMode, pendingLocation, onMapClick, flyToLocati
 		map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
 
 		map.on("load", () => {
-			map.addSource("stations", { type: "geojson", data: stationsGeoJson() });
-			map.addLayer({
-				id: "stations",
-				type: "circle",
-				source: "stations",
-				paint: {
-					"circle-radius": 7,
-					"circle-color": [
-						"match",
-						["get", "service"],
-						"police",
-						SERVICE_COLORS.police,
-						"medical",
-						SERVICE_COLORS.medical,
-						"fire",
-						SERVICE_COLORS.fire,
-						"#666",
-					],
-					"circle-stroke-width": 2,
-					"circle-stroke-color": "#ffffff",
-				},
-			});
-
-			map.addLayer({
-				id: "station-labels",
-				type: "symbol",
-				source: "stations",
-				minzoom: 12,
-				layout: {
-					"text-field": ["get", "name"],
-					"text-size": 11,
-					"text-offset": [0, 1.2],
-					"text-anchor": "top",
-				},
-				paint: { "text-color": "#334155", "text-halo-color": "#fff", "text-halo-width": 1 },
+			applyMapTheme(map);
+			addEmergencyBuildingLayers(map);
+			fitHongKong(map);
+			void fetchEmergencyFootprints().then((footprints) => {
+				if (footprints.length > 0) updateEmergencyBuildingFootprints(map, footprints);
 			});
 
 			map.addSource("incidents", {
@@ -168,9 +139,7 @@ export const MapView = ({ isAddingMode, pendingLocation, onMapClick, flyToLocati
 			map.on("click", "incidents", (e) => {
 				const feature = e.features?.[0];
 				if (!feature?.properties?.id) return;
-				const incident = incidentsRef.current.find(
-					(i) => i.id === feature.properties?.id,
-				);
+				const incident = incidentsRef.current.find((i) => i.id === feature.properties?.id);
 				if (!incident) return;
 				showIncidentPopup(map, incident, popupRef, popupRootRef);
 			});
@@ -255,22 +224,23 @@ export const MapView = ({ isAddingMode, pendingLocation, onMapClick, flyToLocati
 	return (
 		<div className="relative h-full w-full">
 			<div ref={containerRef} className="h-full w-full" />
-			<div className="pointer-events-none absolute bottom-4 left-4 rounded-lg bg-white/90 px-3 py-2 text-xs shadow backdrop-blur">
-				<p className="font-medium text-slate-700">Legend</p>
+			<div className="pointer-events-none absolute bottom-4 left-4 rounded-lg border border-white/10 bg-black/80 px-3 py-2 text-xs text-slate-200 shadow backdrop-blur">
+				<p className="font-medium text-white">Legend</p>
 				<div className="mt-1 flex flex-wrap gap-3">
 					<span className="flex items-center gap-1">
-						<span className="size-2 rounded-full bg-blue-600" /> Police
+						<span className="size-2 rounded-sm bg-blue-600" /> Police
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="size-2 rounded-full bg-green-600" /> Medical
+						<span className="size-2 rounded-sm bg-green-600" /> Medical
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="size-2 rounded-full bg-red-600" /> Fire
+						<span className="size-2 rounded-sm bg-red-600" /> Fire
 					</span>
 					<span className="flex items-center gap-1">
 						<span className="size-2 rounded-full bg-orange-500" /> Incident
 					</span>
 				</div>
+				<p className="mt-1.5 text-[10px] text-slate-500">Other buildings: grey 70%</p>
 			</div>
 		</div>
 	);
@@ -307,6 +277,8 @@ const syncDispatchLayers = (
 			activeUnitIds.add(unit.id);
 			const lineId = `dispatch-line-${unit.id}`;
 			const color = SERVICE_COLORS[unit.service];
+			const destination = { lat: incident.lat, lng: incident.lng };
+			const route = unitRoute(unit, destination);
 
 			if (!map.getSource(lineId)) {
 				map.addSource(lineId, {
@@ -314,13 +286,7 @@ const syncDispatchLayers = (
 					data: {
 						type: "Feature",
 						properties: {},
-						geometry: {
-							type: "LineString",
-							coordinates: [
-								[unit.from.lng, unit.from.lat],
-								[incident.lng, incident.lat],
-							],
-						},
+						geometry: { type: "LineString", coordinates: route },
 					},
 				});
 				map.addLayer({
@@ -338,7 +304,7 @@ const syncDispatchLayers = (
 
 			if (!unitMarkersRef.current?.has(unit.id)) {
 				const progress = computeUnitProgress(unit);
-				const pos = interpolate(unit.from, { lat: incident.lat, lng: incident.lng }, progress);
+				const pos = interpolateAlongRoute(route, progress);
 				const marker = new maplibregl.Marker({ element: unitMarkerEl(color) })
 					.setLngLat([pos.lng, pos.lat])
 					.addTo(map);
