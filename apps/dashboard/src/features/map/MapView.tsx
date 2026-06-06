@@ -4,14 +4,14 @@ import maplibregl, {
 	type Marker,
 	type Popup,
 } from "maplibre-gl";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { HK_BEARING, HK_CENTER, HK_MIN_ZOOM, HK_PITCH, HK_ZOOM, MAP_STYLE } from "~/config/hk";
 import { computeUnitProgress } from "~/data/seed";
 import { SERVICE_COLORS } from "~/domain/mapping";
-import type { Coord, Incident } from "~/domain/types";
+import type { Incident } from "~/domain/types";
 import { IncidentPopupContent } from "~/features/incidents/IncidentPopup";
 import {
 	addEmergencyBuildingLayers,
@@ -27,10 +27,7 @@ import { unitRoute } from "~/lib/routing";
 import { useIncidentsStore } from "~/store/incidents";
 
 type Props = {
-	isAddingMode: boolean;
-	pendingLocation: Coord | null;
-	onMapClick: (coord: Coord) => void;
-	flyToLocation: Coord | null;
+	focusIncident: Incident | null;
 };
 
 type PointFeatureCollection = {
@@ -59,40 +56,40 @@ const incidentsGeoJson = (incidents: Incident[]): PointFeatureCollection => ({
 const unitMarkerEl = (color: string) => {
 	const el = document.createElement("div");
 	el.className = "dispatch-unit-marker";
-	el.style.cssText = `
-		width: 14px; height: 14px; border-radius: 50%;
+	el.style.cssText = "position: relative; width: 14px; height: 14px;";
+
+	const dot = document.createElement("div");
+	dot.style.cssText = `
+		width: 100%; height: 100%; border-radius: 50%;
 		background: ${color}; border: 2px solid white;
 		box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 	`;
-	return el;
-};
 
-const pendingMarkerEl = () => {
-	const el = document.createElement("div");
-	el.style.cssText = `
-		width: 18px; height: 18px; border-radius: 50%;
-		background: #f59e0b; border: 3px solid white;
-		box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+	const eta = document.createElement("div");
+	eta.className = "dispatch-unit-eta";
+	eta.style.cssText = `
+		position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+		font: 600 10px/1 ui-monospace, monospace; color: #e2e8f0; white-space: nowrap;
+		background: rgba(0,0,0,0.75); padding: 2px 5px; border-radius: 4px;
 	`;
+	eta.textContent = "--:--";
+
+	el.append(dot, eta);
 	return el;
 };
 
-export const MapView = ({ isAddingMode, pendingLocation, onMapClick, flyToLocation }: Props) => {
+export const MapView = ({ focusIncident }: Props) => {
 	const incidents = useIncidentsStore((s) => s.incidents);
+	const [ready, setReady] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const unitMarkersRef = useRef<Map<string, Marker>>(new Map());
-	const pendingMarkerRef = useRef<Marker | null>(null);
 	const popupRef = useRef<Popup | null>(null);
 	const popupRootRef = useRef<Root | null>(null);
 	const syncedLinesRef = useRef<Set<string>>(new Set());
 	const incidentsRef = useRef(incidents);
-	const isAddingModeRef = useRef(isAddingMode);
-	const onMapClickRef = useRef(onMapClick);
 
 	incidentsRef.current = incidents;
-	isAddingModeRef.current = isAddingMode;
-	onMapClickRef.current = onMapClick;
 
 	useDispatchAnimation(mapRef, incidents, unitMarkersRef);
 
@@ -150,12 +147,8 @@ export const MapView = ({ isAddingMode, pendingLocation, onMapClick, flyToLocati
 			map.on("mouseleave", "incidents", () => {
 				map.getCanvas().style.cursor = "";
 			});
-		});
 
-		map.on("click", (e) => {
-			const features = map.queryRenderedFeatures(e.point, { layers: ["incidents"] });
-			if (features.length > 0) return;
-			if (isAddingModeRef.current) onMapClickRef.current({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+			setReady(true);
 		});
 
 		mapRef.current = map;
@@ -164,7 +157,6 @@ export const MapView = ({ isAddingMode, pendingLocation, onMapClick, flyToLocati
 			popupRef.current?.remove();
 			for (const marker of unitMarkersRef.current.values()) marker.remove();
 			unitMarkersRef.current.clear();
-			pendingMarkerRef.current?.remove();
 			map.remove();
 			mapRef.current = null;
 		};
@@ -172,54 +164,32 @@ export const MapView = ({ isAddingMode, pendingLocation, onMapClick, flyToLocati
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!map) return;
-		const sync = () => {
-			const source = map.getSource("incidents") as GeoJSONSource | undefined;
-			source?.setData(incidentsGeoJson(incidents));
-		};
-		if (map.isStyleLoaded()) sync();
-		else map.once("load", sync);
-	}, [incidents]);
+		if (!map || !ready) return;
+		(map.getSource("incidents") as GeoJSONSource | undefined)?.setData(incidentsGeoJson(incidents));
+	}, [incidents, ready]);
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!map) return;
-		const sync = () => syncDispatchLayers(map, incidents, unitMarkersRef, syncedLinesRef);
-		if (map.isStyleLoaded()) sync();
-		else map.once("load", sync);
-	}, [incidents]);
+		if (!map || !ready) return;
+		syncDispatchLayers(map, incidents, unitMarkersRef, syncedLinesRef);
+	}, [incidents, ready]);
 
 	useEffect(() => {
 		const map = mapRef.current;
-		if (!map) return;
-		map.getCanvas().style.cursor = isAddingMode ? "crosshair" : "";
-	}, [isAddingMode]);
-
-	useEffect(() => {
-		const map = mapRef.current;
-		if (!map) return;
-
-		pendingMarkerRef.current?.remove();
-		pendingMarkerRef.current = null;
-
-		if (!pendingLocation) return;
-
-		pendingMarkerRef.current = new maplibregl.Marker({
-			element: pendingMarkerEl(),
-		})
-			.setLngLat([pendingLocation.lng, pendingLocation.lat])
-			.addTo(map);
-	}, [pendingLocation]);
-
-	useEffect(() => {
-		const map = mapRef.current;
-		if (!map || !flyToLocation) return;
-		map.flyTo({
-			center: [flyToLocation.lng, flyToLocation.lat],
-			zoom: 14,
-			duration: 1200,
-		});
-	}, [flyToLocation]);
+		if (!map || !ready || !focusIncident) return;
+		const points: [number, number][] = [
+			[focusIncident.lng, focusIncident.lat],
+			...focusIncident.dispatchUnits.map((u) => [u.from.lng, u.from.lat] as [number, number]),
+		];
+		const padding = Math.max(20, Math.min(80, map.getContainer().clientWidth / 4 - 20));
+		map.fitBounds(
+			points.reduce(
+				(bounds, p) => bounds.extend(p),
+				new maplibregl.LngLatBounds(points[0], points[0]),
+			),
+			{ padding, pitch: HK_PITCH, bearing: HK_BEARING, maxZoom: 14, duration: 1200 },
+		);
+	}, [focusIncident, ready]);
 
 	return (
 		<div className="relative h-full w-full">

@@ -45,35 +45,12 @@ export const interpolateAlongRoute = (route: [number, number][], t: number): Coo
 	return coordFromLngLat(route[route.length - 1]);
 };
 
-export const sliceRouteToProgress = (route: [number, number][], t: number): [number, number][] => {
-	if (route.length === 0) return [];
-	if (route.length === 1 || t <= 0) return [route[0]];
-	if (t >= 1) return [...route];
-
-	const target = routeLength(route) * t;
-	const res: [number, number][] = [route[0]];
-	let traveled = 0;
-	for (let i = 1; i < route.length; i++) {
-		const a = coordFromLngLat(route[i - 1]);
-		const b = coordFromLngLat(route[i]);
-		const segLen = haversine(a, b);
-		if (traveled + segLen >= target) {
-			const pos = interpolate(a, b, segLen > 0 ? (target - traveled) / segLen : 0);
-			res.push([pos.lng, pos.lat]);
-			return res;
-		}
-		traveled += segLen;
-		res.push(route[i]);
-	}
-	return res;
-};
-
 export const nearestStation = (
 	coord: Coord,
 	service: ServiceCategory,
 	stations: Station[],
 ): Station => {
-	let res = stations[0];
+	let res: Station | null = null;
 	let minDist = Infinity;
 	for (const station of stations) {
 		if (station.service !== service) continue;
@@ -83,6 +60,7 @@ export const nearestStation = (
 			res = station;
 		}
 	}
+	if (!res) throw new Error(`no station for service ${service}`);
 	return res;
 };
 

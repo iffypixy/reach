@@ -13,29 +13,36 @@ export const unitRoute = (unit: DispatchUnit, destination: Coord): RouteCoords =
 const isStraightFallback = (unit: DispatchUnit, destination: Coord) =>
 	unitRoute(unit, destination).length <= 2;
 
+export type DrivingRoute = { coords: RouteCoords; durationMinutes: number | null };
+
 type OsrmResponse = {
 	code: string;
-	routes?: Array<{ geometry?: { coordinates?: RouteCoords } }>;
+	routes?: Array<{ duration?: number; geometry?: { coordinates?: RouteCoords } }>;
 };
 
-export const fetchDrivingRoute = async (from: Coord, to: Coord): Promise<RouteCoords> => {
+export const fetchDrivingRoute = async (from: Coord, to: Coord): Promise<DrivingRoute> => {
+	const fallback: DrivingRoute = { coords: straightRoute(from, to), durationMinutes: null };
 	const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
 	try {
 		const res = await fetch(url);
-		if (!res.ok) return straightRoute(from, to);
+		if (!res.ok) return fallback;
 		const data = (await res.json()) as OsrmResponse;
-		if (data.code !== "Ok") return straightRoute(from, to);
-		const coords = data.routes?.[0]?.geometry?.coordinates;
-		if (!coords || coords.length < 2) return straightRoute(from, to);
-		return coords;
+		if (data.code !== "Ok") return fallback;
+		const route = data.routes?.[0];
+		const coords = route?.geometry?.coordinates;
+		if (!coords || coords.length < 2) return fallback;
+		return {
+			coords,
+			durationMinutes: typeof route.duration === "number" ? route.duration / 60 : null,
+		};
 	} catch {
-		return straightRoute(from, to);
+		return fallback;
 	}
 };
 
 export const hydrateIncidentRoutes = async (
 	incident: Incident,
-	onRoute: (unitId: string, route: RouteCoords) => void,
+	onRoute: (unitId: string, route: RouteCoords, durationMinutes: number | null) => void,
 ) => {
 	const destination = { lat: incident.lat, lng: incident.lng };
 	const pending = incident.dispatchUnits.filter((unit) => isStraightFallback(unit, destination));
@@ -43,8 +50,8 @@ export const hydrateIncidentRoutes = async (
 
 	await Promise.all(
 		pending.map(async (unit) => {
-			const route = await fetchDrivingRoute(unit.from, destination);
-			onRoute(unit.id, route);
+			const { coords, durationMinutes } = await fetchDrivingRoute(unit.from, destination);
+			onRoute(unit.id, coords, durationMinutes);
 		}),
 	);
 };

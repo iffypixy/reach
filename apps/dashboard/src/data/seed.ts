@@ -1,41 +1,96 @@
 import { DEMO_TIME_SCALE } from "~/config/hk";
 import { STATIONS } from "~/data/stations";
-import {
-	INCIDENT_CATEGORIES,
-	INCIDENT_LABELS,
-	INCIDENT_SERVICES,
-	randomEtaMinutes,
-} from "~/domain/mapping";
-import type { DispatchUnit, Incident, IncidentCategory, ServiceCategory } from "~/domain/types";
-import { nearestStation, randomCoordInHk } from "~/lib/geo";
+import { INCIDENT_SERVICES } from "~/domain/mapping";
+import type { Coord, DispatchUnit, IncidentCategory, ServiceCategory, Station } from "~/domain/types";
+import { haversine } from "~/lib/geo";
 import { straightRoute } from "~/lib/routing";
 
-const SEVERITIES = ["low", "medium", "high"] as const;
+/** assumed urban response speed (km/h) for estimating ETA before a road route arrives */
+const URBAN_KMH = 28;
+const ETA_MIN_MINUTES = 5;
+const ETA_MAX_MINUTES = 65;
 
-const GOVT_REF_PREFIX = ["GOV", "CAD", "EMS", "FSD"];
+/** a responding unit must start at least this far from the incident (no trivial hops / U-turn loops) */
+const MIN_ORIGIN_KM = 2.5;
+const MAX_FIELD_KM = 9;
+
+/** central urban band — keeps random field origins out of the sea, islands and Shenzhen */
+const CENTRAL_BAND = { minLat: 22.27, maxLat: 22.4, minLng: 114.1, maxLng: 114.25 };
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+export const clampEtaMinutes = (minutes: number) =>
+	clamp(minutes, ETA_MIN_MINUTES, ETA_MAX_MINUTES);
+
+const estimateEtaMinutes = (from: Coord, to: Coord) =>
+	clampEtaMinutes((haversine(from, to) / URBAN_KMH) * 60);
+
+const randomInBand = (): Coord => ({
+	lat: CENTRAL_BAND.minLat + Math.random() * (CENTRAL_BAND.maxLat - CENTRAL_BAND.minLat),
+	lng: CENTRAL_BAND.minLng + Math.random() * (CENTRAL_BAND.maxLng - CENTRAL_BAND.minLng),
+});
+
+const projectCoord = (origin: Coord, distKm: number, bearingRad: number): Coord => ({
+	lat: origin.lat + (distKm / 111) * Math.cos(bearingRad),
+	lng: origin.lng + (distKm / (111 * Math.cos((origin.lat * Math.PI) / 180))) * Math.sin(bearingRad),
+});
+
+/** random central-band point at least MIN_ORIGIN_KM from the incident */
+const fieldOrigin = (incident: Coord): Coord => {
+	for (let i = 0; i < 24; i++) {
+		const candidate = randomInBand();
+		const d = haversine(incident, candidate);
+		if (d >= MIN_ORIGIN_KM && d <= MAX_FIELD_KM) return candidate;
+	}
+	const pushed = projectCoord(incident, MIN_ORIGIN_KM + 1.5, Math.random() * 2 * Math.PI);
+	return {
+		lat: clamp(pushed.lat, CENTRAL_BAND.minLat, CENTRAL_BAND.maxLat),
+		lng: clamp(pushed.lng, CENTRAL_BAND.minLng, CENTRAL_BAND.maxLng),
+	};
+};
+
+/** nearest station of the service that is far enough away to warrant a real route */
+const nearestStationBeyond = (incident: Coord, service: ServiceCategory): Station | null => {
+	let res: Station | null = null;
+	let minDist = Infinity;
+	for (const station of STATIONS) {
+		if (station.service !== service) continue;
+		const dist = haversine(incident, { lat: station.lat, lng: station.lng });
+		if (dist < MIN_ORIGIN_KM || dist >= minDist) continue;
+		minDist = dist;
+		res = station;
+	}
+	return res;
+};
+
+/** small jitter (~±200 m) so a unit doesn't sit exactly on the station roof */
+const jitterAroundStation = ({ lat, lng }: Coord): Coord => ({
+	lat: lat + (Math.random() - 0.5) * 0.0036,
+	lng: lng + (Math.random() - 0.5) * 0.0036,
+});
+
+const dispatchDurationMs = (etaMinutes: number) => (etaMinutes * 60 * 1000) / DEMO_TIME_SCALE;
 
 const buildDispatchUnits = (
-	incidentCoord: { lat: number; lng: number },
+	incidentCoord: Coord,
 	services: ServiceCategory[],
 	createdAt: number,
 ): DispatchUnit[] =>
 	services.map((service) => {
-		const station = nearestStation(incidentCoord, service, STATIONS);
-		const from = { lat: station.lat, lng: station.lng };
+		const station = Math.random() < 0.5 ? nearestStationBeyond(incidentCoord, service) : null;
+		const from = station ? jitterAroundStation(station) : fieldOrigin(incidentCoord);
 		return {
 			id: crypto.randomUUID(),
 			service,
-			stationId: station.id,
-			stationName: station.name,
+			stationId: station?.id ?? "field-unit",
+			stationName: station?.name ?? "Field unit",
 			from,
 			route: straightRoute(from, incidentCoord),
-			etaMinutes: randomEtaMinutes(),
+			etaMinutes: estimateEtaMinutes(from, incidentCoord),
 			createdAt,
 			arrived: false,
 		};
 	});
-
-const dispatchDurationMs = (etaMinutes: number) => (etaMinutes * 60 * 1000) / DEMO_TIME_SCALE;
 
 export const createDispatchUnits = (
 	lat: number,
@@ -46,45 +101,12 @@ export const createDispatchUnits = (
 
 export const computeUnitProgress = (unit: DispatchUnit, now = Date.now()) => {
 	if (unit.arrived) return 1;
-	const elapsed = now - unit.createdAt;
 	const duration = dispatchDurationMs(unit.etaMinutes);
 	if (duration <= 0) return 1;
-	return Math.min(1, elapsed / duration);
+	return Math.min(1, (now - unit.createdAt) / duration);
 };
 
 export const computeRemainingEtaMinutes = (unit: DispatchUnit, now = Date.now()) => {
 	if (unit.arrived) return 0;
 	return unit.etaMinutes * (1 - computeUnitProgress(unit, now));
-};
-
-export const generateSeedIncidents = (): Incident[] => {
-	const count = Math.floor(Math.random() * 3) + 7;
-	const usedCategories = [...INCIDENT_CATEGORIES].sort(() => Math.random() - 0.5).slice(0, count);
-
-	return usedCategories.map((category, i) => {
-		const coord = randomCoordInHk();
-		const minutesAgo = Math.floor(Math.random() * 45) + 5;
-		const createdAt = Date.now() - minutesAgo * 60 * 1000;
-		const dispatchUnits = createDispatchUnits(coord.lat, coord.lng, category, createdAt).map(
-			(unit) => ({
-				...unit,
-				arrived: computeUnitProgress(unit, Date.now()) >= 1,
-			}),
-		);
-
-		return {
-			id: crypto.randomUUID(),
-			category,
-			title: INCIDENT_LABELS[category],
-			severity: SEVERITIES[i % SEVERITIES.length] ?? "medium",
-			description: `External CAD feed — ${INCIDENT_LABELS[category].toLowerCase()} reported via emergency hotline`,
-			lat: coord.lat,
-			lng: coord.lng,
-			address: `HK Grid Ref ${GOVT_REF_PREFIX[i % GOVT_REF_PREFIX.length]}-${1000 + i * 137}`,
-			createdAt,
-			source: "seed" as const,
-			dispatchUnits,
-			respondersContacted: Math.random() > 0.6,
-		};
-	});
 };

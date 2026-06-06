@@ -47,10 +47,3 @@ export type Incident = {
 	dispatchUnits: DispatchUnit[];
 	respondersContacted: boolean;
 };
-
-export type AddIncidentInput = {
-	category: IncidentCategory;
-	lat: number;
-	lng: number;
-	address?: string;
-};

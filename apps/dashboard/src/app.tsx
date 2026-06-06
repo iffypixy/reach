@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Coord } from "~/domain/types";
+import type { Incident } from "~/domain/types";
 import { AddIncidentPanel } from "~/features/incidents/AddIncidentPanel";
 import { RecommenderPanel } from "~/features/incidents/RecommenderPanel";
 import { MapView } from "~/features/map/MapView";
@@ -7,18 +7,12 @@ import { useIncidentsStore } from "~/store/incidents";
 
 export const App = () => {
 	const loadSeed = useIncidentsStore((s) => s.loadSeed);
-	const [isAddingMode, setIsAddingMode] = useState(false);
-	const [pendingLocation, setPendingLocation] = useState<Coord | null>(null);
-	const [flyToLocation, setFlyToLocation] = useState<Coord | null>(null);
+	const addIncident = useIncidentsStore((s) => s.addIncident);
+	const [focusIncident, setFocusIncident] = useState<Incident | null>(null);
 
 	useEffect(() => loadSeed(), [loadSeed]);
 
-	const handleSetLocation = (coord: Coord, _address?: string) => {
-		setPendingLocation(coord);
-		setFlyToLocation(coord);
-	};
-
-	const handleMapClick = (coord: Coord) => setPendingLocation(coord);
+	const handleAdd = () => setFocusIncident(addIncident());
 
 	return (
 		<div className="flex h-screen w-screen flex-col bg-slate-100">
@@ -34,22 +28,11 @@ export const App = () => {
 
 			<div className="flex min-h-0 flex-1">
 				<aside className="w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-white">
-					<AddIncidentPanel
-						isAddingMode={isAddingMode}
-						onToggleAddingMode={setIsAddingMode}
-						pendingLocation={pendingLocation}
-						onSetLocation={handleSetLocation}
-						onClearLocation={() => setPendingLocation(null)}
-					/>
+					<AddIncidentPanel onAdd={handleAdd} />
 				</aside>
 
 				<main className="min-w-0 flex-1">
-					<MapView
-						isAddingMode={isAddingMode}
-						pendingLocation={pendingLocation}
-						onMapClick={handleMapClick}
-						flyToLocation={flyToLocation}
-					/>
+					<MapView focusIncident={focusIncident} />
 				</main>
 
 				<aside className="w-80 shrink-0 overflow-y-auto border-l border-slate-200 bg-white">

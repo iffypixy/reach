@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { DEMO_TIME_SCALE } from "~/config/hk";
 import { computeRemainingEtaMinutes, computeUnitProgress } from "~/data/seed";
 import type { Incident } from "~/domain/types";
-import { interpolateAlongRoute, sliceRouteToProgress } from "~/lib/geo";
+import { interpolateAlongRoute } from "~/lib/geo";
 import { unitRoute } from "~/lib/routing";
 import { useIncidentsStore } from "~/store/incidents";
 
@@ -16,6 +16,13 @@ export const formatEta = (minutes: number) => {
 
 export const getUnitEtaLabel = (unit: Incident["dispatchUnits"][number], now = Date.now()) =>
 	formatEta(computeRemainingEtaMinutes(unit, now));
+
+/** live mm:ss countdown shown on the moving vehicle */
+const formatEtaClock = (minutes: number) => {
+	if (minutes <= 0) return "Arrived";
+	const totalSeconds = Math.ceil(minutes * 60);
+	return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
+};
 
 export const useDispatchAnimation = (
 	mapRef: React.RefObject<MapLibreMap | null>,
@@ -36,17 +43,17 @@ export const useDispatchAnimation = (
 						const destination = { lat: incident.lat, lng: incident.lng };
 						const route = unitRoute(unit, destination);
 						const pos = interpolateAlongRoute(route, progress);
-						unitMarkersRef.current?.get(unit.id)?.setLngLat([pos.lng, pos.lat]);
+						const marker = unitMarkersRef.current?.get(unit.id);
+						marker?.setLngLat([pos.lng, pos.lat]);
+						const etaEl = marker?.getElement().querySelector(".dispatch-unit-eta");
+						if (etaEl) etaEl.textContent = formatEtaClock(computeRemainingEtaMinutes(unit, now));
 
 						const source = map.getSource(`dispatch-line-${unit.id}`) as GeoJSONSource | undefined;
 						if (source) {
 							source.setData({
 								type: "Feature",
 								properties: {},
-								geometry: {
-									type: "LineString",
-									coordinates: sliceRouteToProgress(route, progress),
-								},
+								geometry: { type: "LineString", coordinates: route },
 							});
 						}
 

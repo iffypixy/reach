@@ -11,8 +11,8 @@ export const HK_BOUNDS = {
 	maxLat: 22.55,
 } as const;
 
-/** scales real ETA minutes down for demo (20 min ETA ≈ 20 sec on screen) */
-export const DEMO_TIME_SCALE = 60;
+/** 1 = real time: a 20 min ETA takes 20 real minutes on screen (no speed-up) */
+export const DEMO_TIME_SCALE = 1;
 
 export const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY ?? "";
 
