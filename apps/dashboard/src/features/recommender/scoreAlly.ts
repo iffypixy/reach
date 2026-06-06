@@ -4,8 +4,8 @@ import { certRelevanceScore, getMatchedCerts } from "~/domain/certMapping";
 import type { Ally, IncidentType } from "~/domain/types";
 import { haversineKm } from "~/lib/geo";
 
-const DISTANCE_WEIGHT = 0.7;
-const CERT_WEIGHT = 0.3;
+const DISTANCE_WEIGHT = 0.8;
+const CERT_WEIGHT = 0.2;
 
 export type AllyScore = {
 	score: number;

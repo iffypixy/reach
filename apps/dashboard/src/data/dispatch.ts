@@ -40,6 +40,19 @@ const randomInBand = (): Coord => {
 	return { lat: 22.32, lng: 114.17 };
 };
 
+/** keep two incidents at least this far apart so none ever spawn on the same spot */
+const MIN_INCIDENT_SEPARATION_KM = 0.5;
+
+/** random on-land point in the central band, kept clear of every existing incident */
+export const randomIncidentCoord = (existing: Coord[]): Coord => {
+	for (let i = 0; i < 60; i++) {
+		const candidate = randomInBand();
+		if (existing.every((e) => haversineKm(e, candidate) >= MIN_INCIDENT_SEPARATION_KM))
+			return candidate;
+	}
+	return randomInBand();
+};
+
 const projectCoord = (origin: Coord, distKm: number, bearingRad: number): Coord => ({
 	lat: origin.lat + (distKm / 111) * Math.cos(bearingRad),
 	lng: origin.lng + (distKm / (111 * Math.cos((origin.lat * Math.PI) / 180))) * Math.sin(bearingRad),

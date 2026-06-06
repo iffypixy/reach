@@ -17,6 +17,7 @@ import {
 	computeRemainingEtaMinutes,
 	computeServiceProgress,
 	createEmergencyServices,
+	randomIncidentCoord,
 	sanitizeServiceOrigin,
 } from "~/data/dispatch";
 import { HK_HOTSPOTS } from "~/data/hotspots";
@@ -284,6 +285,31 @@ async function resolveServiceRoute(
 		return data;
 	}
 	return null;
+}
+
+const nearestHotspotName = ([lng, lat]: [number, number]): string => {
+	let best = HK_HOTSPOTS[0]!;
+	let bestD = Infinity;
+	for (const h of HK_HOTSPOTS) {
+		const d = (h.lng - lng) ** 2 + (h.lat - lat) ** 2;
+		if (d >= bestD) continue;
+		bestD = d;
+		best = h;
+	}
+	return best.name;
+};
+
+async function reverseGeocode([lng, lat]: [number, number], token: string): Promise<string | null> {
+	try {
+		const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=address,poi&limit=1&access_token=${token}`;
+		const res = await fetch(url);
+		const json = (await res.json()) as { features?: Array<{ place_name?: string; text?: string }> };
+		const f = json.features?.[0];
+		if (!f) return null;
+		return (f.place_name ?? f.text ?? "").split(",").slice(0, 2).join(",").trim() || null;
+	} catch {
+		return null;
+	}
 }
 
 function interpolateRoute(coords: [number, number][], t: number): [number, number] {
@@ -810,7 +836,8 @@ const IncidentMarker = ({
 	const typeColor = TYPE_COLOR[incident.type];
 	const statusColor = STATUS_COLOR[incident.status];
 	const pulseDuration = STATUS_PULSE[incident.status];
-	const showPulse = pulseDuration !== "none";
+	const showPulse = pulseDuration !== "none" && !incident.handled;
+	const opacity = incident.handled ? (selected ? 1 : 0.1) : dimmed ? 0.35 : 1;
 	return (
 		<Marker longitude={incident.coords[0]} latitude={incident.coords[1]} anchor="center">
 			<button
@@ -827,7 +854,7 @@ const IncidentMarker = ({
 					alignItems: "center",
 					justifyContent: "center",
 					position: "relative",
-					opacity: dimmed ? 0.35 : 1,
+					opacity,
 					transition: "opacity 0.2s",
 				}}
 				aria-label={`${TYPE_LABEL[incident.type]} incident`}
@@ -1602,23 +1629,29 @@ export const SoteriaMap = () => {
 	const addIncident = useCallback(() => {
 		const receivedAt = Date.now();
 		const type = INCIDENT_TYPES[Math.floor(Math.random() * INCIDENT_TYPES.length)]!;
-		const hotspot = HK_HOTSPOTS[Math.floor(Math.random() * HK_HOTSPOTS.length)]!;
+		// random on-land spot, kept clear of every existing incident (never the same position twice)
+		const c = randomIncidentCoord(incidents.map((i) => ({ lat: i.coords[1], lng: i.coords[0] })));
+		const coords: [number, number] = [c.lng, c.lat];
 		const incident: Incident = {
 			id: crypto.randomUUID(),
 			type,
 			status: "incoming",
-			coords: [hotspot.lng, hotspot.lat],
-			address: hotspot.name,
+			coords,
+			address: nearestHotspotName(coords),
 			receivedAt,
 			callerPhone: `+852 9${Math.floor(Math.random() * 9000000 + 1000000)}`,
-			emergencyServices: createEmergencyServices([hotspot.lng, hotspot.lat], type, Date.now()),
+			emergencyServices: createEmergencyServices(coords, type, Date.now()),
 			contactedAllyIds: [],
 			handled: false,
 			source: "operator",
 		};
 		setIncidents((prev) => [...prev, incident]);
 		setSelectedId(incident.id);
-	}, []);
+		reverseGeocode(coords, import.meta.env.VITE_MAPBOX_TOKEN as string).then((addr) => {
+			if (!addr) return;
+			setIncidents((prev) => prev.map((i) => (i.id === incident.id ? { ...i, address: addr } : i)));
+		});
+	}, [incidents]);
 
 	return (
 		<div
