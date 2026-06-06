@@ -1,0 +1,18 @@
+{
+	"name": "reach",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"typecheck": "pnpm --filter soteria --filter dashboard run typecheck",
+		"lint": "biome check ."
+	},
+	"author": "Ansat Euler <ansat.euler@gmail.com>",
+	"license": "MIT",
+	"devDependencies": {
+		"@biomejs/biome": "2.4.16"
+	},
+	"packageManager": "pnpm@10.23.0",
+	"pnpm": {
+		"onlyBuiltDependencies": ["@swc/core", "esbuild"]
+	}
+}
