@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Cross, Flame, HandHelping, Shield } from "lucide-react";
 import type { MapRef } from "react-map-gl/mapbox";
 import { Layer, Map as MapGL, Marker, Source } from "react-map-gl/mapbox";
@@ -13,7 +13,6 @@ type IncidentType =
 	| "severe-bleeding"
 	| "seizure"
 	| "overdose"
-	| "drowning"
 	| "diabetic-emergency"
 	| "choking"
 	| "anaphylaxis"
@@ -21,7 +20,6 @@ type IncidentType =
 	| "mental-health-crisis"
 	| "language-barrier";
 
-type IncidentStatus = "incoming" | "active" | "dispatched";
 type ServiceType = "ambulance" | "police" | "fire-engine";
 
 type EmergencyService = {
@@ -35,7 +33,6 @@ type EmergencyService = {
 type Incident = {
 	id: string;
 	type: IncidentType;
-	status: IncidentStatus;
 	coords: [number, number];
 	address: string;
 	receivedAt: number;
@@ -64,121 +61,218 @@ const INCIDENTS: Incident[] = [
 	{
 		id: "inc-001",
 		type: "cardiac-arrest",
-		status: "incoming",
-		coords: [114.1628, 22.2824],
-		address: "8 Finance St, Central",
-		receivedAt: Date.now() - 45_000,
+		coords: [114.1558, 22.2844],
+		address: "Des Voeux Rd Central, Central",
+		receivedAt: Date.now() - 18000,
 		callerPhone: "+852 9123 4567",
 		emergencyServices: [
-			{ id: "svc-001a", type: "ambulance", callsign: "AMB-09", coords: [114.1432, 22.2844], etaMinutes: 7 },
-			{ id: "svc-001b", type: "police", callsign: "BRAVO-3", coords: [114.1583, 22.2776], etaMinutes: 4 },
+			{ id: "svc-001a", type: "ambulance", callsign: "AMB-10", coords: [114.1532, 22.2818], etaMinutes: 7 },
+			{ id: "svc-001b", type: "police", callsign: "UNIT-01", coords: [114.1544, 22.2802], etaMinutes: 5 },
 		],
 	},
 	{
 		id: "inc-002",
-		type: "drowning",
-		status: "incoming",
-		coords: [114.1720, 22.2960],
-		address: "TST Promenade, Tsim Sha Tsui",
-		receivedAt: Date.now() - 90_000,
+		type: "choking",
+		coords: [114.1567, 22.2866],
+		address: "8 Finance St, Central",
+		receivedAt: Date.now() - 32000,
 		callerPhone: "+852 9456 7890",
 		emergencyServices: [
-			{ id: "svc-002a", type: "ambulance", callsign: "AMB-05", coords: [114.1652, 22.3045], etaMinutes: 5 },
-			{ id: "svc-002b", type: "police", callsign: "CHARLIE-2", coords: [114.1718, 22.3010], etaMinutes: 3 },
+			{ id: "svc-002a", type: "ambulance", callsign: "AMB-11", coords: [114.1532, 22.2818], etaMinutes: 9 },
+			{ id: "svc-002b", type: "police", callsign: "UNIT-02", coords: [114.1544, 22.2802], etaMinutes: 6 },
 		],
 	},
 	{
 		id: "inc-003",
-		type: "severe-bleeding",
-		status: "active",
-		coords: [114.1694, 22.3213],
-		address: "Mong Kok Rd / Nathan Rd",
-		receivedAt: Date.now() - 185_000,
+		type: "breathing-difficulty",
+		coords: [114.1689, 22.3096],
+		address: "Canton Rd, Tsim Sha Tsui",
+		receivedAt: Date.now() - 45000,
 		callerPhone: "+852 9234 5678",
 		emergencyServices: [
-			{ id: "svc-003a", type: "ambulance", callsign: "AMB-14", coords: [114.1741, 22.3099], etaMinutes: 5 },
-			{ id: "svc-003b", type: "police", callsign: "ALPHA-7", coords: [114.1621, 22.3156], etaMinutes: 3 },
+			{ id: "svc-003a", type: "ambulance", callsign: "AMB-12", coords: [114.1958, 22.2898], etaMinutes: 11 },
+			{ id: "svc-003b", type: "police", callsign: "UNIT-03", coords: [114.1718, 22.3048], etaMinutes: 7 },
 		],
 	},
 	{
 		id: "inc-004",
-		type: "mental-health-crisis",
-		status: "active",
-		coords: [114.1849, 22.2804],
-		address: "Causeway Bay MTR Exit D",
-		receivedAt: Date.now() - 360_000,
-		callerPhone: "+852 9345 6789",
+		type: "severe-bleeding",
+		coords: [114.1711, 22.3107],
+		address: "Nathan Rd, Mong Kok",
+		receivedAt: Date.now() - 58000,
+		callerPhone: "+852 9567 8901",
 		emergencyServices: [
-			{ id: "svc-004a", type: "ambulance", callsign: "AMB-22", coords: [114.1673, 22.2783], etaMinutes: 6 },
-			{ id: "svc-004b", type: "police", callsign: "ECHO-3", coords: [114.1826, 22.2756], etaMinutes: 4 },
+			{ id: "svc-004a", type: "ambulance", callsign: "AMB-13", coords: [114.1818, 22.3062], etaMinutes: 10 },
+			{ id: "svc-004b", type: "police", callsign: "UNIT-04", coords: [114.1842, 22.3018], etaMinutes: 8 },
 		],
 	},
 	{
 		id: "inc-005",
 		type: "stroke",
-		status: "active",
-		coords: [114.1742, 22.2831],
-		address: "Wan Chai Waterfront Promenade, HKCEC",
-		receivedAt: Date.now() - 130_000,
-		callerPhone: "+852 9567 8901",
+		coords: [114.1893, 22.2804],
+		address: "Causeway Bay MTR Exit D",
+		receivedAt: Date.now() - 75000,
+		callerPhone: "+852 9345 6789",
 		emergencyServices: [
-			{ id: "svc-005a", type: "ambulance", callsign: "AMB-17", coords: [114.1729, 22.2810], etaMinutes: 4 },
-			{ id: "svc-005b", type: "police", callsign: "DELTA-4", coords: [114.1783, 22.2838], etaMinutes: 3 },
+			{ id: "svc-005a", type: "ambulance", callsign: "AMB-14", coords: [114.1532, 22.2818], etaMinutes: 8 },
+			{ id: "svc-005b", type: "police", callsign: "UNIT-05", coords: [114.1544, 22.2802], etaMinutes: 5 },
 		],
 	},
 	{
 		id: "inc-006",
-		type: "choking",
-		status: "incoming",
-		coords: [114.1716, 22.2985],
-		address: "Canton Rd / Haiphong Rd, Tsim Sha Tsui",
-		receivedAt: Date.now() - 18_000,
+		type: "seizure",
+		coords: [114.1732, 22.2793],
+		address: "Exhibition Rd, Wan Chai",
+		receivedAt: Date.now() - 90000,
 		callerPhone: "+852 9678 9012",
 		emergencyServices: [
-			{ id: "svc-006a", type: "ambulance", callsign: "AMB-03", coords: [114.1652, 22.3045], etaMinutes: 4 },
-			{ id: "svc-006b", type: "police", callsign: "CHARLIE-5", coords: [114.1680, 22.2990], etaMinutes: 2 },
+			{ id: "svc-006a", type: "ambulance", callsign: "AMB-15", coords: [114.1532, 22.2818], etaMinutes: 10 },
+			{ id: "svc-006b", type: "police", callsign: "UNIT-06", coords: [114.1544, 22.2802], etaMinutes: 6 },
 		],
 	},
 	{
 		id: "inc-007",
-		type: "seizure",
-		status: "incoming",
-		coords: [114.1824, 22.2779],
-		address: "Times Square, 1 Matheson St, Causeway Bay",
-		receivedAt: Date.now() - 75_000,
+		type: "anaphylaxis",
+		coords: [114.1655, 22.2773],
+		address: "Pacific Place, Admiralty",
+		receivedAt: Date.now() - 110000,
 		callerPhone: "+852 9789 0123",
 		emergencyServices: [
-			{ id: "svc-007a", type: "ambulance", callsign: "AMB-18", coords: [114.1863, 22.2814], etaMinutes: 4 },
-			{ id: "svc-007b", type: "police", callsign: "ECHO-7", coords: [114.1840, 22.2750], etaMinutes: 3 },
+			{ id: "svc-007a", type: "ambulance", callsign: "AMB-16", coords: [114.1532, 22.2818], etaMinutes: 9 },
+			{ id: "svc-007b", type: "police", callsign: "UNIT-07", coords: [114.1544, 22.2802], etaMinutes: 7 },
 		],
 	},
 	{
 		id: "inc-008",
-		type: "anaphylaxis",
-		status: "dispatched",
-		coords: [114.1645, 22.2787],
-		address: "Pacific Place L3, 88 Queensway, Admiralty",
-		receivedAt: Date.now() - 1_080_000,
+		type: "breathing-difficulty",
+		coords: [114.1717, 22.2956],
+		address: "Middle Rd, Tsim Sha Tsui",
+		receivedAt: Date.now() - 130000,
 		callerPhone: "+852 9890 1234",
 		emergencyServices: [
-			{ id: "svc-008a", type: "ambulance", callsign: "AMB-11", coords: [114.1609, 22.2803], etaMinutes: 3 },
-			{ id: "svc-008b", type: "police", callsign: "FOXTROT-2", coords: [114.1583, 22.2776], etaMinutes: 6 },
+			{ id: "svc-008a", type: "ambulance", callsign: "AMB-17", coords: [114.1698, 22.3182], etaMinutes: 11 },
+			{ id: "svc-008b", type: "police", callsign: "UNIT-08", coords: [114.1718, 22.3048], etaMinutes: 8 },
+		],
+	},
+	{
+		id: "inc-009",
+		type: "overdose",
+		coords: [114.1838, 22.2784],
+		address: "Times Square, Causeway Bay",
+		receivedAt: Date.now() - 155000,
+		callerPhone: "+852 9901 2345",
+		emergencyServices: [
+			{ id: "svc-009a", type: "ambulance", callsign: "AMB-18", coords: [114.1532, 22.2818], etaMinutes: 9 },
+			{ id: "svc-009b", type: "police", callsign: "UNIT-09", coords: [114.1544, 22.2802], etaMinutes: 5 },
+		],
+	},
+	{
+		id: "inc-010",
+		type: "diabetic-emergency",
+		coords: [114.1509, 22.2839],
+		address: "Hollywood Rd, Sheung Wan",
+		receivedAt: Date.now() - 185000,
+		callerPhone: "+852 9012 3456",
+		emergencyServices: [
+			{ id: "svc-010a", type: "ambulance", callsign: "AMB-19", coords: [114.1532, 22.2818], etaMinutes: 8 },
+			{ id: "svc-010b", type: "police", callsign: "UNIT-10", coords: [114.1544, 22.2802], etaMinutes: 6 },
+		],
+	},
+	{
+		id: "inc-011",
+		type: "mental-health-crisis",
+		coords: [114.1903, 22.2852],
+		address: "Victoria Park Rd, Causeway Bay",
+		receivedAt: Date.now() - 220000,
+		callerPhone: "+852 9112 2334",
+		emergencyServices: [
+			{ id: "svc-011a", type: "ambulance", callsign: "AMB-20", coords: [114.1532, 22.2818], etaMinutes: 10 },
+			{ id: "svc-011b", type: "police", callsign: "UNIT-11", coords: [114.1544, 22.2802], etaMinutes: 7 },
+		],
+	},
+	{
+		id: "inc-012",
+		type: "childbirth",
+		coords: [114.1776, 22.3256],
+		address: "Prince Edward Rd, Mong Kok East",
+		receivedAt: Date.now() - 260000,
+		callerPhone: "+852 9223 3445",
+		emergencyServices: [
+			{ id: "svc-012a", type: "ambulance", callsign: "AMB-21", coords: [114.1958, 22.2898], etaMinutes: 12 },
+			{ id: "svc-012b", type: "police", callsign: "UNIT-12", coords: [114.1718, 22.3048], etaMinutes: 8 },
+		],
+	},
+	{
+		id: "inc-013",
+		type: "language-barrier",
+		coords: [114.1729, 22.3033],
+		address: "Austin Rd, Jordan",
+		receivedAt: Date.now() - 310000,
+		callerPhone: "+852 9334 4556",
+		emergencyServices: [
+			{ id: "svc-013a", type: "ambulance", callsign: "AMB-22", coords: [114.1818, 22.3062], etaMinutes: 7 },
+			{ id: "svc-013b", type: "police", callsign: "UNIT-13", coords: [114.1842, 22.3018], etaMinutes: 5 },
+		],
+	},
+	{
+		id: "inc-014",
+		type: "cardiac-arrest",
+		coords: [114.1304, 22.2835],
+		address: "Belcher's St, Kennedy Town",
+		receivedAt: Date.now() - 360000,
+		callerPhone: "+852 9445 5667",
+		emergencyServices: [
+			{ id: "svc-014a", type: "ambulance", callsign: "AMB-23", coords: [114.1532, 22.2818], etaMinutes: 9 },
+			{ id: "svc-014b", type: "police", callsign: "UNIT-14", coords: [114.1544, 22.2802], etaMinutes: 6 },
+		],
+	},
+	{
+		id: "inc-015",
+		type: "choking",
+		coords: [114.1829, 22.3028],
+		address: "Cheong Wan Rd, Hung Hom",
+		receivedAt: Date.now() - 420000,
+		callerPhone: "+852 9556 6778",
+		emergencyServices: [
+			{ id: "svc-015a", type: "ambulance", callsign: "AMB-24", coords: [114.1958, 22.2898], etaMinutes: 11 },
+			{ id: "svc-015b", type: "police", callsign: "UNIT-15", coords: [114.1718, 22.3048], etaMinutes: 7 },
+		],
+	},
+	{
+		id: "inc-016",
+		type: "severe-bleeding",
+		coords: [114.1639, 22.2787],
+		address: "Queensway, Admiralty",
+		receivedAt: Date.now() - 510000,
+		callerPhone: "+852 9667 7889",
+		emergencyServices: [
+			{ id: "svc-016a", type: "ambulance", callsign: "AMB-25", coords: [114.1532, 22.2818], etaMinutes: 10 },
+			{ id: "svc-016b", type: "police", callsign: "UNIT-16", coords: [114.1544, 22.2802], etaMinutes: 8 },
 		],
 	},
 ];
 
 const ALLIES: Ally[] = [
-	{ id: "ally-001", name: "Chan Siu Ming", phone: "+85291234567", skills: ["cardiac-arrest", "severe-bleeding", "choking", "anaphylaxis"], coords: [114.1590, 22.2791], credentialScore: 94 },
-	{ id: "ally-002", name: "Dr Lee Wai Yee", phone: "+85294567890", skills: ["cardiac-arrest", "stroke", "breathing-difficulty", "diabetic-emergency", "seizure"], coords: [114.1683, 22.2798], credentialScore: 98 },
-	{ id: "ally-003", name: "Priya Nair", phone: "+85292345678", skills: ["mental-health-crisis", "overdose", "language-barrier"], coords: [114.1822, 22.2783], credentialScore: 71 },
-	{ id: "ally-004", name: "James Cheung", phone: "+85295678901", skills: ["drowning", "severe-bleeding", "childbirth", "cardiac-arrest"], coords: [114.1731, 22.3015], credentialScore: 83 },
-	{ id: "ally-005", name: "Wong Ka Wai", phone: "+85293456789", skills: ["cardiac-arrest", "seizure", "anaphylaxis", "breathing-difficulty"], coords: [114.1729, 22.2988], credentialScore: 88 },
-	{ id: "ally-006", name: "Mei Lin Wong", phone: "+85296789012", skills: ["cardiac-arrest", "stroke", "language-barrier", "mental-health-crisis"], coords: [114.1601, 22.2850], credentialScore: 76 },
-	{ id: "ally-007", name: "Ali Hassan", phone: "+85297890123", skills: ["language-barrier", "mental-health-crisis", "seizure", "overdose"], coords: [114.1671, 22.3078], credentialScore: 79 },
-	{ id: "ally-008", name: "Sarah Ng", phone: "+85298901234", skills: ["childbirth", "breathing-difficulty", "anaphylaxis", "diabetic-emergency"], coords: [114.1693, 22.2995], credentialScore: 85 },
-	{ id: "ally-009", name: "David Chan", phone: "+85299012345", skills: ["choking", "cardiac-arrest", "severe-bleeding", "anaphylaxis"], coords: [114.1703, 22.3021], credentialScore: 91 },
-	{ id: "ally-010", name: "Maria Santos", phone: "+85290123456", skills: ["language-barrier", "childbirth", "mental-health-crisis"], coords: [114.1736, 22.2861], credentialScore: 77 },
-	{ id: "ally-011", name: "Kevin Lam", phone: "+85291122334", skills: ["drowning", "cardiac-arrest", "breathing-difficulty", "seizure"], coords: [114.1748, 22.2954], credentialScore: 86 },
+	{ id: "ally-001", name: "Chan Siu Ming", phone: "+85291234567", skills: ["cardiac-arrest", "severe-bleeding", "choking", "anaphylaxis"], coords: [114.1563, 22.2839], credentialScore: 72 },
+	{ id: "ally-002", name: "Dr Lee Wai Yee", phone: "+85294567890", skills: ["choking", "cardiac-arrest", "anaphylaxis"], coords: [114.1572, 22.286], credentialScore: 73 },
+	{ id: "ally-003", name: "Priya Nair", phone: "+85292345678", skills: ["breathing-difficulty", "cardiac-arrest", "anaphylaxis", "seizure"], coords: [114.1693, 22.3102], credentialScore: 74 },
+	{ id: "ally-004", name: "James Cheung", phone: "+85295678901", skills: ["severe-bleeding", "cardiac-arrest", "choking"], coords: [114.1715, 22.3113], credentialScore: 75 },
+	{ id: "ally-005", name: "Wong Ka Wai", phone: "+85293456789", skills: ["stroke", "cardiac-arrest", "breathing-difficulty", "seizure"], coords: [114.1898, 22.2798], credentialScore: 76 },
+	{ id: "ally-006", name: "Mei Lin Wong", phone: "+85296789012", skills: ["seizure", "cardiac-arrest", "breathing-difficulty"], coords: [114.1736, 22.2787], credentialScore: 77 },
+	{ id: "ally-007", name: "Ali Hassan", phone: "+85297890123", skills: ["anaphylaxis", "cardiac-arrest", "choking", "severe-bleeding"], coords: [114.1659, 22.2767], credentialScore: 78 },
+	{ id: "ally-008", name: "Sarah Ng", phone: "+85298901234", skills: ["breathing-difficulty", "cardiac-arrest", "anaphylaxis", "seizure"], coords: [114.1722, 22.2962], credentialScore: 79 },
+	{ id: "ally-009", name: "David Chan", phone: "+85299012345", skills: ["overdose", "mental-health-crisis", "seizure"], coords: [114.1843, 22.2779], credentialScore: 80 },
+	{ id: "ally-010", name: "Maria Santos", phone: "+85290123456", skills: ["diabetic-emergency", "cardiac-arrest", "stroke", "breathing-difficulty"], coords: [114.1513, 22.2833], credentialScore: 81 },
+	{ id: "ally-011", name: "Kevin Lam", phone: "+85291122334", skills: ["mental-health-crisis", "language-barrier", "overdose"], coords: [114.1907, 22.2846], credentialScore: 82 },
+	{ id: "ally-012", name: "Fiona Tsang", phone: "+85292233445", skills: ["childbirth", "severe-bleeding", "breathing-difficulty"], coords: [114.178, 22.3262], credentialScore: 83 },
+	{ id: "ally-013", name: "Raj Patel", phone: "+85293344556", skills: ["language-barrier", "mental-health-crisis", "childbirth"], coords: [114.1733, 22.3039], credentialScore: 84 },
+	{ id: "ally-014", name: "Emily Ho", phone: "+85294455667", skills: ["cardiac-arrest", "severe-bleeding", "choking", "anaphylaxis"], coords: [114.1308, 22.2829], credentialScore: 85 },
+	{ id: "ally-015", name: "Tommy Yip", phone: "+85295566778", skills: ["choking", "cardiac-arrest", "anaphylaxis"], coords: [114.1834, 22.3034], credentialScore: 86 },
+	{ id: "ally-016", name: "Grace Liu", phone: "+85296677889", skills: ["severe-bleeding", "cardiac-arrest", "choking"], coords: [114.1643, 22.2782], credentialScore: 87 },
+	{ id: "ally-017", name: "Dr Lee Wai Yee", phone: "+85294567890", skills: ["cardiac-arrest", "stroke", "breathing-difficulty", "diabetic-emergency", "seizure"], coords: [114.1683, 22.2798], credentialScore: 98 },
+	{ id: "ally-018", name: "David Chan", phone: "+85299012345", skills: ["choking", "cardiac-arrest", "severe-bleeding", "anaphylaxis"], coords: [114.1703, 22.3178], credentialScore: 91 },
+	{ id: "ally-019", name: "Priya Nair", phone: "+85292345678", skills: ["mental-health-crisis", "overdose", "language-barrier"], coords: [114.1822, 22.2783], credentialScore: 71 },
+	{ id: "ally-020", name: "Sarah Ng", phone: "+85298901234", skills: ["childbirth", "breathing-difficulty", "anaphylaxis", "diabetic-emergency"], coords: [114.1693, 22.3128], credentialScore: 85 },
 ];
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -186,11 +280,12 @@ const ALLIES: Ally[] = [
 const Z = {
 	primary: "#EC0016",
 	secondary: "#0C3992",
-	text: "#E8EBF0",
-	muted: "rgba(232, 235, 240, 0.45)",
-	bg: "rgba(6, 8, 14, 0.95)",
-	border: "rgba(12, 57, 146, 0.22)",
-	borderSubtle: "rgba(255, 255, 255, 0.06)",
+	text: "#d8dce3",
+	muted: "rgba(216, 220, 227, 0.52)",
+	bg: "#0b0d12",
+	surface: "#12151b",
+	border: "rgba(255, 255, 255, 0.08)",
+	borderSubtle: "rgba(255, 255, 255, 0.04)",
 	font: '"DB Screen Sans", "Inter", system-ui, -apple-system, sans-serif',
 	fontHead: '"DB Screen Head", "DB Screen Sans", "Inter", system-ui, sans-serif',
 	ambulance: "#EF4444",
@@ -198,10 +293,15 @@ const Z = {
 	fire: "#F97316",
 } as const;
 
+const panelLabel: CSSProperties = {
+	color: Z.muted,
+	fontSize: 11,
+	fontWeight: 500,
+	marginBottom: 6,
+};
+
 // ── Labels, icons & colors per type ──────────────────────────────────────────
 
-// Each incident type maps to a clinical category colour.
-// These drive the marker centre and sidebar icon — separate from the status ring.
 const TYPE_COLOR: Record<IncidentType, string> = {
 	"cardiac-arrest":       "#EF4444",
 	"breathing-difficulty": "#F97316",
@@ -209,7 +309,6 @@ const TYPE_COLOR: Record<IncidentType, string> = {
 	"severe-bleeding":      "#DC2626",
 	"seizure":              "#9333EA",
 	"overdose":             "#0891B2",
-	"drowning":             "#0284C7",
 	"diabetic-emergency":   "#D97706",
 	"choking":              "#EA580C",
 	"anaphylaxis":          "#BE123C",
@@ -225,7 +324,6 @@ const TYPE_CODE: Record<IncidentType, string> = {
 	"severe-bleeding":      "SB",
 	"seizure":              "SZ",
 	"overdose":             "OD",
-	"drowning":             "DR",
 	"diabetic-emergency":   "DI",
 	"choking":              "CK",
 	"anaphylaxis":          "AX",
@@ -241,7 +339,6 @@ const TYPE_LABEL: Record<IncidentType, string> = {
 	"severe-bleeding":      "Severe Bleeding",
 	"seizure":              "Seizure",
 	"overdose":             "Overdose / Poisoning",
-	"drowning":             "Drowning",
 	"diabetic-emergency":   "Diabetic Emergency",
 	"choking":              "Choking",
 	"anaphylaxis":          "Anaphylaxis",
@@ -250,23 +347,34 @@ const TYPE_LABEL: Record<IncidentType, string> = {
 	"language-barrier":     "Language Barrier",
 };
 
-const STATUS_COLOR: Record<IncidentStatus, string> = {
-	incoming:   "#EF4444",
-	active:     "#F97316",
-	dispatched: "#22C55E",
+// Lower number = higher clinical urgency. Used for queue order and map pulse.
+const TYPE_PRIORITY: Record<IncidentType, number> = {
+	"cardiac-arrest":       1,
+	"choking":              1,
+	"anaphylaxis":          1,
+	"severe-bleeding":      1,
+	"stroke":               2,
+	"breathing-difficulty": 2,
+	"seizure":              2,
+	"overdose":             2,
+	"diabetic-emergency":   3,
+	"childbirth":           3,
+	"mental-health-crisis": 3,
+	"language-barrier":     4,
 };
 
-// Pulse speed signals urgency: incoming is faster than active.
-const STATUS_PULSE: Record<IncidentStatus, string> = {
-	incoming:   "1.5s",
-	active:     "2.8s",
-	dispatched: "none",
-};
+const PRIORITY_PULSE: Record<number, string> = { 1: "1.5s", 2: "2.8s" };
+
+const compareIncidents = (a: Incident, b: Incident): number =>
+	TYPE_PRIORITY[a.type] - TYPE_PRIORITY[b.type] || a.receivedAt - b.receivedAt;
+
+const MAP_ICON_SIZE = 13;
+const MAP_ICON_STROKE = 2.5;
 
 const SVC_ICON: Record<ServiceType, ReactNode> = {
-	ambulance:     <Cross    size={13} color="white" strokeWidth={2.5} />,
-	police:        <Shield   size={13} color="white" strokeWidth={2.5} />,
-	"fire-engine": <Flame    size={13} color="white" strokeWidth={2.5} />,
+	ambulance:     <Cross        size={MAP_ICON_SIZE} color="white" strokeWidth={MAP_ICON_STROKE} />,
+	police:        <Shield       size={MAP_ICON_SIZE} color="white" strokeWidth={MAP_ICON_STROKE} />,
+	"fire-engine": <Flame        size={MAP_ICON_SIZE} color="white" strokeWidth={MAP_ICON_STROKE} />,
 };
 
 const SVC_LABEL: Record<ServiceType, string> = {
@@ -298,11 +406,35 @@ const formatDuration = (secs: number): string =>
 const formatDist = (m: number): string =>
 	m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
 
-const allyInitials = (name: string): string =>
-	name.replace(/^Dr\s+/, "").split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase();
+type MapFocus = { kind: "ally"; id: string } | { kind: "service"; id: string };
 
-const allyFirstName = (name: string): string =>
-	name.replace(/^Dr\s+/, "").split(" ")[0];
+const allyMapLabel = (rank: number): string => (rank === 0 ? "Best Ally" : `Ally #${rank + 1}`);
+
+const serviceMapLabel = (svc: EmergencyService, all: EmergencyService[]): string => {
+	const peers = all.filter((s) => s.type === svc.type);
+	if (peers.length <= 1) return SVC_LABEL[svc.type];
+	return `${SVC_LABEL[svc.type]} #${peers.findIndex((s) => s.id === svc.id) + 1}`;
+};
+
+const mapPillStyle = (
+	color: string,
+	emphasis: "primary" | "secondary",
+	focused: boolean,
+): CSSProperties => ({
+	display: "flex",
+	alignItems: "center",
+	gap: 5,
+	background: color,
+	borderRadius: 20,
+	padding: "5px 9px 5px 7px",
+	border: `1px solid rgba(255,255,255,${emphasis === "primary" ? "0.2" : "0.14"})`,
+	boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+	outline: focused ? `2px solid ${color}` : "none",
+	outlineOffset: 1,
+	whiteSpace: "nowrap",
+	fontFamily: Z.font,
+	cursor: "pointer",
+});
 
 const routeKey = (from: [number, number], to: [number, number], profile: string) =>
 	`${from[0].toFixed(4)},${from[1].toFixed(4)};${to[0].toFixed(4)},${to[1].toFixed(4)};${profile}`;
@@ -392,6 +524,34 @@ const buildRadiusGeoJSON = (
 // ── Module-level route cache ───────────────────────────────────────────────────
 const routeCache = new Map<string, RouteData>();
 
+const estimateWalkS = (from: [number, number], to: [number, number]): number =>
+	haversineM(from, to) / 1.4;
+
+const bestAllyEtaS = (incident: Incident): number | null => {
+	const matched = ALLIES.filter((a) => a.skills.includes(incident.type));
+	if (!matched.length) return null;
+	return Math.min(
+		...matched.map((a) => {
+			const cached = routeCache.get(routeKey(a.coords, incident.coords, "walking"));
+			return cached?.durationS ?? estimateWalkS(a.coords, incident.coords);
+		}),
+	);
+};
+
+const fastestServiceEtaS = (incident: Incident): number =>
+	Math.min(
+		...incident.emergencyServices.map((svc) => {
+			const cached = routeCache.get(routeKey(svc.coords, incident.coords, "driving"));
+			return cached?.durationS ?? svc.etaMinutes * 60;
+		}),
+	);
+
+const isAllyViable = (incident: Incident): boolean => {
+	const allyEta = bestAllyEtaS(incident);
+	if (allyEta === null) return false;
+	return allyEta < fastestServiceEtaS(incident);
+};
+
 // ── Components ────────────────────────────────────────────────────────────────
 
 const IncidentSidebar = ({
@@ -412,113 +572,63 @@ const IncidentSidebar = ({
 			height: "100%",
 			background: Z.bg,
 			borderRight: `1px solid ${Z.border}`,
-			backdropFilter: "blur(20px)",
 			display: "flex",
 			flexDirection: "column",
 			zIndex: 10,
 			fontFamily: Z.font,
 		}}
 	>
-		{/* Header */}
 		<div
 			style={{
-				padding: "14px 16px 12px",
+				padding: "16px 16px 14px",
 				borderBottom: `1px solid ${Z.border}`,
-				display: "flex",
-				alignItems: "center",
 			}}
 		>
-			<span
+			<div
 				style={{
 					fontFamily: Z.fontHead,
-					fontSize: 15,
+					fontSize: 17,
 					fontWeight: 900,
 					color: Z.text,
-					letterSpacing: "0.05em",
+					letterSpacing: "0.06em",
 					textTransform: "uppercase",
+					lineHeight: 1,
 				}}
 			>
 				Soteria
-			</span>
-			<span
-				style={{
-					marginLeft: "auto",
-					display: "flex",
-					alignItems: "center",
-					gap: 5,
-					color: "#22C55E",
-					fontSize: 10,
-					fontWeight: 600,
-					letterSpacing: "0.08em",
-					textTransform: "uppercase",
-				}}
-			>
-				<span
-					style={{
-						width: 6,
-						height: 6,
-						borderRadius: "50%",
-						background: "#22C55E",
-						animation: "liveBlip 1.8s ease-in-out infinite",
-						display: "inline-block",
-					}}
-				/>
-				Live
-			</span>
+			</div>
+			<div style={{ color: Z.muted, fontSize: 11, marginTop: 5 }}>
+				{incidents.length} in queue
+			</div>
 		</div>
 
-		{/* Incidents count */}
-		<div
-			style={{
-				padding: "7px 16px 5px",
-				color: Z.muted,
-				fontSize: 10,
-				fontWeight: 600,
-				letterSpacing: "0.1em",
-				textTransform: "uppercase",
-				display: "flex",
-				alignItems: "center",
-				gap: 6,
-			}}
-		>
-			<span>Incidents</span>
-			<span
-				style={{
-					background: STATUS_COLOR.incoming + "22",
-					color: STATUS_COLOR.incoming,
-					fontWeight: 700,
-					fontSize: 9,
-					padding: "1px 5px",
-					borderRadius: 3,
-				}}
-			>
-				{incidents.filter((i) => i.status === "incoming").length} incoming
-			</span>
-		</div>
-
-		{/* List — sorted by status then age: incoming → active → dispatched */}
+		{/* List — clinical priority, then longest waiting */}
 		<div style={{ flex: 1, overflowY: "auto" }}>
-			{incidents.map((inc) => (
-				<IncidentCard
-					key={inc.id}
-					incident={inc}
-					selected={inc.id === selectedId}
-					onSelect={() => onSelect(inc.id)}
-				/>
-			))}
+			{incidents.length === 0 ? (
+				<div style={{ padding: "16px", color: Z.muted, fontSize: 12, lineHeight: 1.5 }}>
+					Queue empty
+				</div>
+			) : (
+				incidents.map((inc) => (
+					<IncidentCard
+						key={inc.id}
+						incident={inc}
+						selected={inc.id === selectedId}
+						onSelect={() => onSelect(inc.id)}
+					/>
+				))
+			)}
 		</div>
 
-		{/* Footer */}
 		<div
 			style={{
-				padding: "8px 16px",
+				padding: "10px 16px",
 				borderTop: `1px solid ${Z.borderSubtle}`,
 				color: Z.muted,
-				fontSize: 10,
-				letterSpacing: "0.03em",
+				fontSize: 11,
 			}}
 		>
-			HK 999 Dispatch · Operator View
+			999 dispatch · shift 4
 		</div>
 	</div>
 );
@@ -533,122 +643,41 @@ const IncidentCard = ({
 	onSelect: () => void;
 }) => {
 	const typeColor = TYPE_COLOR[incident.type];
-	const statusColor = STATUS_COLOR[incident.status];
-	const allyCount = ALLIES.filter((a) => a.skills.includes(incident.type)).length;
 	return (
 		<button
 			type="button"
 			onClick={onSelect}
 			style={{
 				width: "100%",
-				background: selected ? "rgba(12, 57, 146, 0.12)" : "transparent",
+				background: selected ? Z.surface : "transparent",
 				border: "none",
-				borderLeft: selected ? `2.5px solid ${Z.secondary}` : "2.5px solid transparent",
+				borderLeft: `3px solid ${selected ? typeColor : "transparent"}`,
 				borderBottom: `1px solid ${Z.borderSubtle}`,
-				padding: "10px 16px 10px 13px",
+				padding: "11px 16px",
 				cursor: "pointer",
 				textAlign: "left",
-				display: "flex",
-				alignItems: "flex-start",
-				gap: 10,
+				fontFamily: Z.font,
 			}}
 		>
-			{/* Type icon — uses type colour, not status colour */}
-			<div
-				style={{
-					width: 32,
-					height: 32,
-					borderRadius: 6,
-					background: typeColor + "20",
-					border: `1px solid ${typeColor}50`,
-					flexShrink: 0,
-					marginTop: 1,
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					gap: 1,
-				}}
-			>
-				<span
-					style={{
-						color: typeColor,
-						fontSize: 7,
-						fontWeight: 800,
-						letterSpacing: "-0.3px",
-						lineHeight: 1,
-					}}
-				>
-					{TYPE_CODE[incident.type]}
+			<div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
+				<span style={{ color: Z.text, fontSize: 12, fontWeight: 600 }}>
+					{TYPE_LABEL[incident.type]}
+				</span>
+				<span style={{ color: Z.muted, fontSize: 11, flexShrink: 0 }}>
+					{formatElapsed(incident.receivedAt)}
 				</span>
 			</div>
-
-			<div style={{ flex: 1, minWidth: 0 }}>
-				{/* Type + status */}
-				<div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
-					<span style={{ color: Z.text, fontSize: 12, fontWeight: 600 }}>
-						{TYPE_LABEL[incident.type]}
-					</span>
-					<span
-						style={{
-							background: statusColor + "22",
-							color: statusColor,
-							fontSize: 9,
-							fontWeight: 700,
-							padding: "1px 5px",
-							borderRadius: 3,
-							textTransform: "uppercase",
-							letterSpacing: "0.08em",
-							flexShrink: 0,
-						}}
-					>
-						{incident.status}
-					</span>
-				</div>
-
-				{/* Address */}
-				<div
-					style={{
-						color: Z.muted,
-						fontSize: 11,
-						lineHeight: 1.4,
-						overflow: "hidden",
-						textOverflow: "ellipsis",
-						whiteSpace: "nowrap",
-					}}
-				>
-					{incident.address}
-				</div>
-
-				{/* Meta row: elapsed · allies · phone */}
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						gap: 5,
-						marginTop: 3,
-						color: Z.muted,
-						fontSize: 10,
-					}}
-				>
-					<span
-						style={{
-							color: incident.status === "incoming" ? STATUS_COLOR.incoming : Z.muted,
-							fontWeight: incident.status === "incoming" ? 600 : 400,
-						}}
-					>
-						{formatElapsed(incident.receivedAt)} ago
-					</span>
-					<span style={{ opacity: 0.35 }}>·</span>
-					<span
-						style={{
-							color: allyCount > 0 ? "#22C55E" : STATUS_COLOR.incoming,
-							fontWeight: 600,
-						}}
-					>
-						{allyCount} {allyCount === 1 ? "ally" : "allies"}
-					</span>
-				</div>
+			<div
+				style={{
+					color: Z.muted,
+					fontSize: 11,
+					lineHeight: 1.4,
+					overflow: "hidden",
+					textOverflow: "ellipsis",
+					whiteSpace: "nowrap",
+				}}
+			>
+				{incident.address}
 			</div>
 		</button>
 	);
@@ -657,18 +686,15 @@ const IncidentCard = ({
 const IncidentMarker = ({
 	incident,
 	selected,
-	dimmed,
 	onClick,
 }: {
 	incident: Incident;
 	selected: boolean;
-	dimmed: boolean;
 	onClick: () => void;
 }) => {
 	const typeColor = TYPE_COLOR[incident.type];
-	const statusColor = STATUS_COLOR[incident.status];
-	const pulseDuration = STATUS_PULSE[incident.status];
-	const showPulse = pulseDuration !== "none";
+	const pulseDuration = PRIORITY_PULSE[TYPE_PRIORITY[incident.type]];
+	const showPulse = !!pulseDuration;
 	return (
 		<Marker longitude={incident.coords[0]} latitude={incident.coords[1]} anchor="center">
 			<button
@@ -685,12 +711,10 @@ const IncidentMarker = ({
 					alignItems: "center",
 					justifyContent: "center",
 					position: "relative",
-					opacity: dimmed ? 0.35 : 1,
 					transition: "opacity 0.2s",
 				}}
 				aria-label={`${TYPE_LABEL[incident.type]} incident`}
 			>
-				{/* Status-coloured pulsing rings — speed varies by urgency */}
 				{showPulse && (
 					<>
 						<span
@@ -698,7 +722,7 @@ const IncidentMarker = ({
 								position: "absolute",
 								inset: 0,
 								borderRadius: "50%",
-								border: `1.5px solid ${statusColor}`,
+								border: `1.5px solid ${typeColor}`,
 								animation: `pulseRing ${pulseDuration} cubic-bezier(0.215, 0.61, 0.355, 1) infinite`,
 							}}
 						/>
@@ -707,7 +731,7 @@ const IncidentMarker = ({
 								position: "absolute",
 								inset: 0,
 								borderRadius: "50%",
-								border: `1.5px solid ${statusColor}`,
+								border: `1.5px solid ${typeColor}`,
 								animation: `pulseRing ${pulseDuration} cubic-bezier(0.215, 0.61, 0.355, 1) infinite`,
 								animationDelay: `${parseFloat(pulseDuration) * 0.5}s`,
 							}}
@@ -715,28 +739,26 @@ const IncidentMarker = ({
 					</>
 				)}
 
-				{/* Type-coloured centre — carries the 2-letter code */}
+				{/* Type-coloured badge — matches responding unit pill style */}
 				<span
 					style={{
 						position: "relative",
 						zIndex: 1,
-						width: 22,
-						height: 22,
-						borderRadius: "50%",
-						background: typeColor,
-						color: "#fff",
-						fontSize: 7,
-						fontWeight: 800,
-						letterSpacing: "-0.3px",
-						fontFamily: Z.font,
 						display: "flex",
 						alignItems: "center",
 						justifyContent: "center",
-						outline: selected ? `2.5px solid ${statusColor}` : "none",
-						outlineOffset: 3,
-						boxShadow: selected
-							? `0 0 16px ${typeColor}90`
-							: `0 0 6px ${typeColor}50`,
+						background: typeColor,
+						borderRadius: 20,
+						padding: "5px 10px",
+						color: "#fff",
+						fontSize: 10,
+						fontWeight: 800,
+						letterSpacing: "0.04em",
+						fontFamily: Z.font,
+						border: "1.5px solid rgba(255,255,255,0.25)",
+						outline: selected ? `2px solid #fff` : "none",
+						outlineOffset: 2,
+						boxShadow: "0 1px 5px rgba(0,0,0,0.4)",
 					}}
 				>
 					{TYPE_CODE[incident.type]}
@@ -746,89 +768,156 @@ const IncidentMarker = ({
 	);
 };
 
-const AllyMarker = ({ ally, rank }: { ally: Ally; rank: number }) => {
-	const size = rank === 0 ? 34 : rank === 1 ? 26 : 20;
-	const iconSize = rank === 0 ? 18 : rank === 1 ? 14 : 11;
+const AllyMarker = ({
+	ally,
+	rank,
+	focused,
+	onClick,
+}: {
+	ally: Ally;
+	rank: number;
+	focused: boolean;
+	onClick: () => void;
+}) => {
+	const isPrimary = rank === 0;
+	const dimmed = !isPrimary && !focused;
 	return (
 		<Marker longitude={ally.coords[0]} latitude={ally.coords[1]} anchor="center">
 			<div
-				title={ally.name}
 				style={{
-					width: size,
-					height: size,
-					borderRadius: "50%",
-					background: rank === 0 ? Z.secondary : "rgba(6, 8, 14, 0.88)",
-					border: `2px solid ${rank === 0 ? Z.secondary : Z.secondary + "60"}`,
-					opacity: rank === 0 ? 1 : rank === 1 ? 0.65 : 0.4,
-					boxShadow: rank === 0 ? `0 0 20px ${Z.secondary}80, 0 0 8px ${Z.secondary}50` : "none",
+					position: "relative",
+					width: isPrimary ? 72 : 56,
+					height: isPrimary ? 48 : 36,
 					display: "flex",
 					alignItems: "center",
 					justifyContent: "center",
-					transition: "all 0.3s ease",
+					opacity: dimmed ? 0.42 : 1,
+					transition: "opacity 0.2s ease",
 				}}
 			>
-				<svg viewBox="0 0 24 24" width={iconSize} height={iconSize} aria-hidden="true">
-					<circle cx="12" cy="7" r="4" fill="white" />
-					<path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="white" />
-				</svg>
+				{isPrimary && (
+					<>
+						<span
+							style={{
+								position: "absolute",
+								inset: 0,
+								borderRadius: "50%",
+								border: `1.5px solid ${Z.secondary}`,
+								animation: "pulseRing 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite",
+							}}
+						/>
+						<span
+							style={{
+								position: "absolute",
+								inset: 0,
+								borderRadius: "50%",
+								border: `1.5px solid ${Z.secondary}`,
+								animation: "pulseRing 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite",
+								animationDelay: "1.2s",
+							}}
+						/>
+					</>
+				)}
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation();
+						onClick();
+					}}
+					style={{
+						...mapPillStyle(
+							isPrimary || focused ? Z.secondary : "rgba(12, 57, 146, 0.55)",
+							isPrimary ? "primary" : "secondary",
+							focused,
+						),
+						position: "relative",
+						zIndex: 1,
+					}}
+					aria-label={`${allyMapLabel(rank)} — tap for details`}
+				>
+					<HandHelping size={MAP_ICON_SIZE} color="white" strokeWidth={MAP_ICON_STROKE} />
+					<span style={{ color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: "0.04em" }}>
+						{allyMapLabel(rank)}
+					</span>
+				</button>
 			</div>
 		</Marker>
 	);
 };
 
-const VehicleMarker = ({ svc, pos }: { svc: EmergencyService; pos: [number, number] }) => {
+const VehicleMarker = ({
+	svc,
+	pos,
+	label,
+	focused,
+	onClick,
+}: {
+	svc: EmergencyService;
+	pos: [number, number];
+	label: string;
+	focused: boolean;
+	onClick: () => void;
+}) => {
 	const color = svcColor(svc.type);
 	return (
 		<Marker longitude={pos[0]} latitude={pos[1]} anchor="center">
-			<div
-				title={`${SVC_LABEL[svc.type]} ${svc.callsign}`}
-				style={{
-					display: "flex",
-					alignItems: "center",
-					gap: 5,
-					background: color,
-					borderRadius: 20,
-					padding: "5px 9px 5px 7px",
-					boxShadow: `0 0 14px ${color}70, 0 2px 8px rgba(0,0,0,0.55)`,
-					border: "1.5px solid rgba(255,255,255,0.25)",
-					whiteSpace: "nowrap",
-					fontFamily: Z.font,
+			<button
+				type="button"
+				onClick={(e) => {
+					e.stopPropagation();
+					onClick();
 				}}
+				style={mapPillStyle(color, "primary", focused)}
+				aria-label={`${label} — tap for details`}
 			>
 				{SVC_ICON[svc.type]}
 				<span style={{ color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: "0.04em" }}>
-					{svc.callsign}
+					{label}
 				</span>
-			</div>
+			</button>
 		</Marker>
 	);
 };
 
 // Fixed source/layer IDs — only data updates when the selected incident changes.
+const visibleAllyRoutes = (allies: Ally[], focusedAllyId: string | null): Ally[] => {
+	if (!allies.length) return [];
+	const primary = allies[0];
+	if (!focusedAllyId || focusedAllyId === primary.id) return [primary];
+	return allies.filter((a) => a.id === focusedAllyId);
+};
+
 const RouteLayer = ({
 	allies,
 	allyRoutes,
 	services,
 	serviceRoutes,
 	incident,
+	focusedAllyId,
 }: {
 	allies: Ally[];
 	allyRoutes: Record<string, RouteData>;
 	services: EmergencyService[];
 	serviceRoutes: Record<string, RouteData>;
 	incident: Incident;
+	focusedAllyId: string | null;
 }) => {
+	const routedAllies = useMemo(
+		() => visibleAllyRoutes(allies, focusedAllyId),
+		[allies, focusedAllyId],
+	);
+
 	const data = useMemo(
 		(): GeoJSON.FeatureCollection => ({
 			type: "FeatureCollection",
 			features: [
-				...allies.map((ally, rank) => ({
+				...routedAllies.map((ally) => ({
 					type: "Feature" as const,
 					geometry: {
 						type: "LineString" as const,
 						coordinates: allyRoutes[ally.id]?.coords ?? [ally.coords, incident.coords],
 					},
-					properties: { routeType: "ally", rank },
+					properties: { routeType: "ally" },
 				})),
 				...services.map((svc) => ({
 					type: "Feature" as const,
@@ -840,7 +929,7 @@ const RouteLayer = ({
 				})),
 			],
 		}),
-		[allies, allyRoutes, services, serviceRoutes, incident],
+		[routedAllies, allyRoutes, services, serviceRoutes, incident],
 	);
 
 	return (
@@ -852,13 +941,8 @@ const RouteLayer = ({
 				layout={{ "line-join": "round", "line-cap": "round" }}
 				paint={{
 					"line-color": "#3B82F6",
-					"line-width": ["case", ["==", ["get", "rank"], 0], 2.5, 1.2],
-					"line-opacity": [
-						"case",
-						["==", ["get", "rank"], 0], 0.9,
-						["==", ["get", "rank"], 1], 0.4,
-						0.15,
-					],
+					"line-width": 2.5,
+					"line-opacity": 0.9,
 					"line-dasharray": [5, 4],
 				}}
 			/>
@@ -903,7 +987,8 @@ const RadiusCircle = ({ coords }: { coords: [number, number] }) => (
 	</Source>
 );
 
-const AllyPanel = ({
+const MapEntityDetail = ({
+	focus,
 	incident,
 	allies,
 	allyRoutes,
@@ -911,6 +996,7 @@ const AllyPanel = ({
 	serviceProgress,
 	onClose,
 }: {
+	focus: MapFocus;
 	incident: Incident;
 	allies: Ally[];
 	allyRoutes: Record<string, RouteData>;
@@ -918,8 +1004,214 @@ const AllyPanel = ({
 	serviceProgress: Record<string, number>;
 	onClose: () => void;
 }) => {
+	if (focus.kind === "ally") {
+		const rank = allies.findIndex((a) => a.id === focus.id);
+		const ally = allies[rank];
+		if (!ally) return null;
+		const route = allyRoutes[ally.id];
+		const label = allyMapLabel(rank);
+		return (
+			<div
+				style={{
+					background: Z.surface,
+					border: `1px solid ${Z.border}`,
+					borderRadius: 6,
+					padding: "14px 16px",
+					maxWidth: 380,
+					width: "100%",
+					boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+					fontFamily: Z.font,
+					pointerEvents: "auto",
+				}}
+			>
+				<div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+					<div
+						style={{
+							width: 32,
+							height: 32,
+							borderRadius: 4,
+							background: Z.secondary,
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							flexShrink: 0,
+						}}
+					>
+						<HandHelping size={MAP_ICON_SIZE} color="white" strokeWidth={MAP_ICON_STROKE} />
+					</div>
+					<div style={{ flex: 1, minWidth: 0 }}>
+						<div style={{ color: Z.text, fontSize: 14, fontWeight: 600, marginBottom: 2 }}>
+							{ally.name}
+						</div>
+						<div style={{ color: Z.muted, fontSize: 12, marginBottom: 6 }}>{label}</div>
+						<div style={{ color: Z.muted, fontSize: 11, lineHeight: 1.5 }}>
+							{route ? (
+								<>
+									{formatDuration(route.durationS)} walk · {formatDist(route.distanceM)}
+								</>
+							) : (
+								"route pending"
+							)}
+							{" · "}
+							{ally.credentialScore} cred
+						</div>
+					</div>
+					<button
+						type="button"
+						onClick={onClose}
+						style={{
+							background: "none",
+							border: "none",
+							color: Z.muted,
+							cursor: "pointer",
+							fontSize: 18,
+							padding: 0,
+							lineHeight: 1,
+							flexShrink: 0,
+						}}
+						aria-label="Close"
+					>
+						×
+					</button>
+				</div>
+				<a
+					href={`tel:${ally.phone}`}
+					style={{
+						display: "block",
+						textAlign: "center",
+						background: Z.primary,
+						color: "#fff",
+						fontSize: 12,
+						fontWeight: 600,
+						padding: "9px 0",
+						borderRadius: 4,
+						textDecoration: "none",
+						marginTop: 12,
+					}}
+				>
+					Call
+				</a>
+			</div>
+		);
+	}
+
+	const svc = incident.emergencyServices.find((s) => s.id === focus.id);
+	if (!svc) return null;
+	const color = svcColor(svc.type);
+	const label = serviceMapLabel(svc, incident.emergencyServices);
+	const route = serviceRoutes[svc.id];
+	const progress = serviceProgress[svc.id] ?? 0;
+	const etaRemaining = route
+		? Math.max(0, route.durationS * (1 - progress))
+		: svc.etaMinutes * 60 * (1 - progress);
+	const pct = Math.min(progress * 100, 100);
+
+	return (
+		<div
+			style={{
+				background: Z.surface,
+				border: `1px solid ${Z.border}`,
+				borderRadius: 6,
+				padding: "14px 16px",
+				maxWidth: 380,
+				width: "100%",
+				boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+				fontFamily: Z.font,
+				pointerEvents: "auto",
+			}}
+		>
+			<div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+				<div
+					style={{
+						width: 32,
+						height: 32,
+						borderRadius: 4,
+						background: color,
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						flexShrink: 0,
+					}}
+				>
+					{SVC_ICON[svc.type]}
+				</div>
+				<div style={{ flex: 1, minWidth: 0 }}>
+					<div style={{ color: Z.text, fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{label}</div>
+					<div style={{ color: Z.muted, fontSize: 12, marginBottom: 8 }}>{svc.callsign}</div>
+					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+						<span style={{ color: Z.muted, fontSize: 11 }}>
+							{pct >= 99 ? "On scene" : "ETA"}
+						</span>
+						<span style={{ color, fontSize: 12, fontWeight: 600 }}>
+							{pct >= 99 ? "Arrived" : formatDuration(etaRemaining)}
+						</span>
+					</div>
+					<div
+						style={{
+							height: 3,
+							background: Z.borderSubtle,
+							borderRadius: 2,
+							overflow: "hidden",
+						}}
+					>
+						<div
+							style={{
+								height: "100%",
+								width: `${pct}%`,
+								background: color,
+								borderRadius: 2,
+								transition: "width 0.2s linear",
+							}}
+						/>
+					</div>
+					{route && (
+						<div style={{ color: Z.muted, fontSize: 11, marginTop: 6 }}>
+							{formatDist(route.distanceM)} out
+						</div>
+					)}
+				</div>
+				<button
+					type="button"
+					onClick={onClose}
+					style={{
+						background: "none",
+						border: "none",
+						color: Z.muted,
+						cursor: "pointer",
+						fontSize: 18,
+						padding: 0,
+						lineHeight: 1,
+						flexShrink: 0,
+					}}
+					aria-label="Close"
+				>
+					×
+				</button>
+			</div>
+		</div>
+	);
+};
+
+const AllyPanel = ({
+	incident,
+	allies,
+	allyRoutes,
+	serviceRoutes,
+	serviceProgress,
+	mapFocus,
+	onMapFocus,
+	onClose,
+}: {
+	incident: Incident;
+	allies: Ally[];
+	allyRoutes: Record<string, RouteData>;
+	serviceRoutes: Record<string, RouteData>;
+	serviceProgress: Record<string, number>;
+	mapFocus: MapFocus | null;
+	onMapFocus: (focus: MapFocus | null) => void;
+	onClose: () => void;
+}) => {
 	const typeColor = TYPE_COLOR[incident.type];
-	const statusColor = STATUS_COLOR[incident.status];
 	return (
 		<div
 			style={{
@@ -930,12 +1222,10 @@ const AllyPanel = ({
 				height: "100%",
 				background: Z.bg,
 				borderLeft: `1px solid ${Z.border}`,
-				backdropFilter: "blur(20px)",
 				display: "flex",
 				flexDirection: "column",
 				zIndex: 10,
 				fontFamily: Z.font,
-				animation: "slideInRight 0.22s ease",
 			}}
 		>
 			{/* Panel header */}
@@ -948,58 +1238,20 @@ const AllyPanel = ({
 					gap: 10,
 				}}
 			>
-				{/* Type badge */}
 				<div
 					style={{
-						width: 34,
-						height: 34,
-						borderRadius: 6,
-						background: typeColor + "20",
-						border: `1px solid ${typeColor}50`,
+						width: 3,
+						alignSelf: "stretch",
+						borderRadius: 1,
+						background: typeColor,
 						flexShrink: 0,
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
 					}}
-				>
-					<span
-						style={{
-							color: typeColor,
-							fontSize: 8,
-							fontWeight: 800,
-							letterSpacing: "-0.3px",
-						}}
-					>
-						{TYPE_CODE[incident.type]}
-					</span>
-				</div>
+				/>
 
 				<div style={{ flex: 1, minWidth: 0 }}>
-					<div
-						style={{
-							display: "flex",
-							alignItems: "center",
-							gap: 5,
-							marginBottom: 2,
-						}}
-					>
+					<div style={{ marginBottom: 2 }}>
 						<span style={{ color: Z.text, fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
 							{TYPE_LABEL[incident.type]}
-						</span>
-						<span
-							style={{
-								background: statusColor + "22",
-								color: statusColor,
-								fontSize: 9,
-								fontWeight: 700,
-								padding: "1px 5px",
-								borderRadius: 3,
-								textTransform: "uppercase",
-								letterSpacing: "0.08em",
-								flexShrink: 0,
-							}}
-						>
-							{incident.status}
 						</span>
 					</div>
 					<div
@@ -1040,22 +1292,15 @@ const AllyPanel = ({
 			</div>
 
 			<div style={{ flex: 1, overflowY: "auto" }}>
-				{/* Best match hero */}
-				<div style={{ padding: "10px 14px 0" }}>
-					<div
-						style={{
-							color: Z.muted,
-							fontSize: 10,
-							fontWeight: 600,
-							letterSpacing: "0.1em",
-							textTransform: "uppercase",
-							marginBottom: 8,
-						}}
-					>
-						Best Match
-					</div>
+				<div style={{ padding: "12px 14px 0" }}>
+					<div style={panelLabel}>Nearest ally</div>
 					{allies[0] ? (
-						<AllyHeroCard ally={allies[0]} route={allyRoutes[allies[0].id]} />
+						<AllyHeroCard
+							ally={allies[0]}
+							route={allyRoutes[allies[0].id]}
+							focused={mapFocus?.kind === "ally" && mapFocus.id === allies[0].id}
+							onSelect={() => onMapFocus({ kind: "ally", id: allies[0].id })}
+						/>
 					) : (
 						<div
 							style={{
@@ -1065,32 +1310,23 @@ const AllyPanel = ({
 								lineHeight: 1.5,
 							}}
 						>
-							No allies with matching skills nearby
+							No trained allies nearby
 						</div>
 					)}
 				</div>
 
 				{/* Compact list for remaining allies */}
 				{allies.length > 1 && (
-					<div style={{ padding: "10px 14px 4px" }}>
-						<div
-							style={{
-								color: Z.muted,
-								fontSize: 10,
-								fontWeight: 600,
-								letterSpacing: "0.1em",
-								textTransform: "uppercase",
-								marginBottom: 2,
-							}}
-						>
-							Also Nearby ({allies.length - 1})
-						</div>
+					<div style={{ padding: "12px 14px 4px" }}>
+						<div style={panelLabel}>Backup ({allies.length - 1})</div>
 						{allies.slice(1).map((ally, i) => (
 							<AllyCompactRow
 								key={ally.id}
 								ally={ally}
 								rank={i + 2}
 								route={allyRoutes[ally.id]}
+								focused={mapFocus?.kind === "ally" && mapFocus.id === ally.id}
+								onSelect={() => onMapFocus({ kind: "ally", id: ally.id })}
 							/>
 						))}
 					</div>
@@ -1104,25 +1340,17 @@ const AllyPanel = ({
 						margin: "8px 14px 0",
 					}}
 				/>
-				<div style={{ padding: "8px 14px 4px" }}>
-					<div
-						style={{
-							color: Z.muted,
-							fontSize: 10,
-							fontWeight: 600,
-							letterSpacing: "0.1em",
-							textTransform: "uppercase",
-							marginBottom: 2,
-						}}
-					>
-						Responding Units
-					</div>
+				<div style={{ padding: "10px 14px 4px" }}>
+					<div style={panelLabel}>Units</div>
 					{incident.emergencyServices.map((svc) => (
 						<ServiceRow
 							key={svc.id}
 							svc={svc}
+							label={serviceMapLabel(svc, incident.emergencyServices)}
 							route={serviceRoutes[svc.id]}
 							progress={serviceProgress[svc.id] ?? 0}
+							focused={mapFocus?.kind === "service" && mapFocus.id === svc.id}
+							onSelect={() => onMapFocus({ kind: "service", id: svc.id })}
 						/>
 					))}
 				</div>
@@ -1133,66 +1361,61 @@ const AllyPanel = ({
 	);
 };
 
-const AllyHeroCard = ({ ally, route }: { ally: Ally; route?: RouteData }) => (
+const AllyHeroCard = ({
+	ally,
+	route,
+	focused,
+	onSelect,
+}: {
+	ally: Ally;
+	route?: RouteData;
+	focused: boolean;
+	onSelect: () => void;
+}) => (
 	<div
 		style={{
-			background: "rgba(12, 57, 146, 0.1)",
-			border: `1px solid rgba(12, 57, 146, 0.28)`,
-			borderLeft: `3px solid ${Z.secondary}`,
-			borderRadius: 6,
+			background: focused ? Z.surface : "transparent",
+			border: `1px solid ${focused ? Z.border : Z.borderSubtle}`,
+			borderRadius: 4,
 			padding: "12px 14px",
+			fontFamily: Z.font,
 		}}
 	>
-		<div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-			{/* Avatar mirrors the map marker */}
-			<div
-				style={{
-					width: 32,
-					height: 32,
-					borderRadius: 6,
-					background: Z.secondary,
-					color: "#fff",
-					fontSize: 11,
-					fontWeight: 700,
-					fontFamily: Z.font,
-					letterSpacing: "-0.3px",
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					flexShrink: 0,
-					boxShadow: `0 0 14px ${Z.secondary}50`,
-				}}
-			>
-				{allyInitials(ally.name)}
-			</div>
+		<button
+			type="button"
+			onClick={onSelect}
+			style={{
+				width: "100%",
+				display: "flex",
+				alignItems: "flex-start",
+				justifyContent: "space-between",
+				gap: 10,
+				marginBottom: 10,
+				background: "none",
+				border: "none",
+				padding: 0,
+				cursor: "pointer",
+				textAlign: "left",
+				fontFamily: Z.font,
+			}}
+		>
 			<div style={{ flex: 1, minWidth: 0 }}>
-				<div
-					style={{
-						color: Z.text,
-						fontSize: 14,
-						fontWeight: 700,
-						lineHeight: 1.2,
-						overflow: "hidden",
-						textOverflow: "ellipsis",
-						whiteSpace: "nowrap",
-					}}
-				>
+				<div style={{ color: Z.text, fontSize: 14, fontWeight: 600, lineHeight: 1.2 }}>
 					{ally.name}
 				</div>
-				<div style={{ color: Z.secondary, fontSize: 11, fontWeight: 600, marginTop: 2 }}>
-					{ally.credentialScore}★
+				<div style={{ color: Z.muted, fontSize: 11, marginTop: 3 }}>
+					{ally.credentialScore} cred
 				</div>
 			</div>
-		</div>
+			<HandHelping size={16} color={Z.muted} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} />
+		</button>
 
 		{route ? (
 			<div style={{ color: Z.muted, fontSize: 12, marginBottom: 12 }}>
-				<span style={{ color: Z.text, fontWeight: 600 }}>{formatDuration(route.durationS)}</span>
-				{" walking · "}
-				<span>{formatDist(route.distanceM)}</span>
+				{formatDuration(route.durationS)} walk · {formatDist(route.distanceM)}
 			</div>
 		) : (
-			<div style={{ color: Z.muted, fontSize: 11, marginBottom: 12 }}>Loading route…</div>
+			<div style={{ color: Z.muted, fontSize: 11, marginBottom: 12 }}>route pending</div>
 		)}
 
 		<a
@@ -1203,85 +1426,121 @@ const AllyHeroCard = ({ ally, route }: { ally: Ally; route?: RouteData }) => (
 				background: Z.primary,
 				color: "#fff",
 				fontSize: 12,
-				fontWeight: 700,
-				padding: "10px 0",
-				borderRadius: 5,
+				fontWeight: 600,
+				padding: "9px 0",
+				borderRadius: 4,
 				textDecoration: "none",
-				letterSpacing: "0.08em",
-				textTransform: "uppercase",
 			}}
 		>
-			Call Now
+			Call
 		</a>
 	</div>
 );
 
-const AllyCompactRow = ({ ally, rank, route }: { ally: Ally; rank: number; route?: RouteData }) => (
+const AllyCompactRow = ({
+	ally,
+	rank,
+	route,
+	focused,
+	onSelect,
+}: {
+	ally: Ally;
+	rank: number;
+	route?: RouteData;
+	focused: boolean;
+	onSelect: () => void;
+}) => (
 	<div
 		style={{
 			display: "flex",
 			alignItems: "center",
 			gap: 8,
-			padding: "7px 0",
+			padding: "7px 4px",
+			background: focused ? "rgba(12, 57, 146, 0.12)" : "transparent",
 			borderTop: `1px solid ${Z.borderSubtle}`,
+			fontFamily: Z.font,
+			borderRadius: 4,
+			opacity: focused ? 1 : 0.55,
+			transition: "opacity 0.2s ease",
 		}}
 	>
-		<span
-			style={{
-				width: 14,
-				flexShrink: 0,
-				color: Z.muted,
-				fontSize: 10,
-				fontWeight: 600,
-				textAlign: "right",
-			}}
-		>
-			{rank}
-		</span>
-		<span
+		<button
+			type="button"
+			onClick={onSelect}
 			style={{
 				flex: 1,
-				color: Z.text,
-				fontSize: 11,
-				overflow: "hidden",
-				textOverflow: "ellipsis",
-				whiteSpace: "nowrap",
+				display: "flex",
+				alignItems: "center",
+				gap: 8,
+				background: "none",
+				border: "none",
+				padding: 0,
+				cursor: "pointer",
+				textAlign: "left",
+				fontFamily: Z.font,
+				minWidth: 0,
 			}}
 		>
-			{ally.name}
-		</span>
-		<span style={{ color: Z.muted, fontSize: 10, flexShrink: 0 }}>
-			{route ? formatDuration(route.durationS) : "—"}
-		</span>
-		<span style={{ color: Z.muted, fontSize: 10, flexShrink: 0 }}>{ally.credentialScore}★</span>
+			<div
+				style={{
+					width: 22,
+					height: 22,
+					borderRadius: 4,
+					background: focused ? Z.secondary : "rgba(12, 57, 146, 0.45)",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					flexShrink: 0,
+				}}
+			>
+				<HandHelping size={11} color="white" strokeWidth={2.5} />
+			</div>
+			<span
+				style={{
+					flex: 1,
+					color: focused ? Z.text : Z.muted,
+					fontSize: 12,
+					fontWeight: 500,
+					overflow: "hidden",
+					textOverflow: "ellipsis",
+					whiteSpace: "nowrap",
+				}}
+			>
+				{ally.name}
+			</span>
+			<span style={{ color: Z.muted, fontSize: 11, flexShrink: 0 }}>
+				{route ? formatDuration(route.durationS) : "—"}
+			</span>
+		</button>
 		<a
 			href={`tel:${ally.phone}`}
 			style={{
 				flexShrink: 0,
 				color: Z.primary,
-				fontSize: 9,
-				fontWeight: 700,
+				fontSize: 11,
+				fontWeight: 500,
 				textDecoration: "none",
-				border: `1px solid ${Z.primary}30`,
-				padding: "3px 8px",
-				borderRadius: 3,
-				textTransform: "uppercase",
-				letterSpacing: "0.05em",
 			}}
 		>
-			call
+			Call
 		</a>
 	</div>
 );
 
 const ServiceRow = ({
 	svc,
+	label,
 	route,
 	progress,
+	focused,
+	onSelect,
 }: {
 	svc: EmergencyService;
+	label: string;
 	route?: RouteData;
 	progress: number;
+	focused: boolean;
+	onSelect: () => void;
 }) => {
 	const color = svcColor(svc.type);
 	const etaRemaining = route
@@ -1289,13 +1548,21 @@ const ServiceRow = ({
 		: svc.etaMinutes * 60 * (1 - progress);
 	const pct = Math.min(progress * 100, 100);
 	return (
-		<div
+		<button
+			type="button"
+			onClick={onSelect}
 			style={{
+				width: "100%",
 				padding: "9px 16px",
-				borderBottom: `1px solid ${Z.borderSubtle}`,
 				display: "flex",
 				alignItems: "center",
 				gap: 10,
+				background: focused ? color + "12" : "transparent",
+				border: "none",
+				borderBottom: `1px solid ${Z.borderSubtle}`,
+				cursor: "pointer",
+				fontFamily: Z.font,
+				textAlign: "left",
 			}}
 		>
 			<div
@@ -1325,9 +1592,10 @@ const ServiceRow = ({
 						marginBottom: 5,
 					}}
 				>
-					<span style={{ color: Z.text, fontSize: 11, fontWeight: 500 }}>
-						{svc.callsign}
-					</span>
+					<div style={{ minWidth: 0 }}>
+						<div style={{ color: Z.text, fontSize: 11, fontWeight: 600 }}>{label}</div>
+						<div style={{ color: Z.muted, fontSize: 9, marginTop: 1 }}>{svc.callsign}</div>
+					</div>
 					<span style={{ color, fontSize: 10, fontWeight: 600 }}>
 						{pct >= 99 ? "On scene" : formatDuration(etaRemaining)}
 					</span>
@@ -1351,7 +1619,7 @@ const ServiceRow = ({
 					/>
 				</div>
 			</div>
-		</div>
+		</button>
 	);
 };
 
@@ -1361,25 +1629,25 @@ export const SoteriaMap = () => {
 	const mapRef = useRef<MapRef>(null);
 	const selectedIdRef = useRef<string | null>(null);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [mapFocus, setMapFocus] = useState<MapFocus | null>(null);
 	const [allyRoutes, setAllyRoutes] = useState<Record<string, RouteData>>({});
 	const [serviceRoutes, setServiceRoutes] = useState<Record<string, RouteData>>({});
 	const [serviceProgress, setServiceProgress] = useState<Record<string, number>>({});
 	const [, setTick] = useState(0);
 
-	// Sorted: incoming first, then by age (oldest active escalates first)
-	const sortedIncidents = useMemo(
-		() =>
-			[...INCIDENTS].sort((a, b) => {
-				const ord: Record<IncidentStatus, number> = { incoming: 0, active: 1, dispatched: 2 };
-				return ord[a.status] - ord[b.status] || a.receivedAt - b.receivedAt;
-			}),
+	const eligibleIncidents = useMemo(
+		() => [...INCIDENTS].filter(isAllyViable).sort(compareIncidents),
 		[],
 	);
 
 	const selectedIncident = useMemo(
-		() => INCIDENTS.find((i) => i.id === selectedId) ?? null,
-		[selectedId],
+		() => eligibleIncidents.find((i) => i.id === selectedId) ?? null,
+		[selectedId, eligibleIncidents],
 	);
+
+	useEffect(() => {
+		if (selectedId && !eligibleIncidents.some((i) => i.id === selectedId)) setSelectedId(null);
+	}, [selectedId, eligibleIncidents]);
 
 	const rankedAllies = useMemo(() => {
 		if (!selectedIncident) return [];
@@ -1402,6 +1670,7 @@ export const SoteriaMap = () => {
 	// Fetch routes when selected incident changes
 	useEffect(() => {
 		selectedIdRef.current = selectedId;
+		setMapFocus(null);
 		setAllyRoutes({});
 		setServiceRoutes({});
 
@@ -1478,6 +1747,11 @@ export const SoteriaMap = () => {
 
 	const handleSelect = (id: string) => setSelectedId((prev) => (prev === id ? null : id));
 
+	const handleMapFocus = (focus: MapFocus | null) =>
+		setMapFocus((prev) =>
+			focus && prev?.kind === focus.kind && prev.id === focus.id ? null : focus,
+		);
+
 	return (
 		<div style={{ width: "100vw", height: "100vh", position: "relative" }}>
 			<MapGL
@@ -1486,6 +1760,7 @@ export const SoteriaMap = () => {
 				mapStyle="mapbox://styles/mapbox/dark-v11"
 				style={{ width: "100%", height: "100%" }}
 				initialViewState={{ longitude: 114.175, latitude: 22.29, zoom: 10, pitch: 0, bearing: 0 }}
+				onClick={() => setMapFocus(null)}
 				onLoad={() => {
 					mapRef.current?.flyTo({
 						center: [114.175, 22.295],
@@ -1538,17 +1813,17 @@ export const SoteriaMap = () => {
 							services={selectedIncident.emergencyServices}
 							serviceRoutes={serviceRoutes}
 							incident={selectedIncident}
+							focusedAllyId={mapFocus?.kind === "ally" ? mapFocus.id : null}
 						/>
 					</>
 				)}
 
-				{/* All incident markers — unselected dim when something is selected */}
-				{INCIDENTS.map((inc) => (
+				{/* Incident markers — hide others when one is selected */}
+				{eligibleIncidents.filter((inc) => !selectedId || inc.id === selectedId).map((inc) => (
 					<IncidentMarker
 						key={inc.id}
 						incident={inc}
 						selected={inc.id === selectedId}
-						dimmed={!!selectedId && inc.id !== selectedId}
 						onClick={() => handleSelect(inc.id)}
 					/>
 				))}
@@ -1556,7 +1831,13 @@ export const SoteriaMap = () => {
 				{/* Ally markers (only for selected incident) */}
 				{selectedIncident &&
 					rankedAllies.map((ally, rank) => (
-						<AllyMarker key={ally.id} ally={ally} rank={rank} />
+						<AllyMarker
+							key={ally.id}
+							ally={ally}
+							rank={rank}
+							focused={mapFocus?.kind === "ally" && mapFocus.id === ally.id}
+							onClick={() => handleMapFocus({ kind: "ally", id: ally.id })}
+						/>
 					))}
 
 				{/* Animated emergency vehicles */}
@@ -1566,16 +1847,50 @@ export const SoteriaMap = () => {
 						const pos = coords
 							? interpolateRoute(coords, serviceProgress[svc.id] ?? 0)
 							: svc.coords;
-						return <VehicleMarker key={svc.id} svc={svc} pos={pos} />;
+						return (
+							<VehicleMarker
+								key={svc.id}
+								svc={svc}
+								pos={pos}
+								label={serviceMapLabel(svc, selectedIncident.emergencyServices)}
+								focused={mapFocus?.kind === "service" && mapFocus.id === svc.id}
+								onClick={() => handleMapFocus({ kind: "service", id: svc.id })}
+							/>
+						);
 					})}
 			</MapGL>
 
 			{/* Left sidebar — sorted by urgency */}
 			<IncidentSidebar
-				incidents={sortedIncidents}
+				incidents={eligibleIncidents}
 				selectedId={selectedId}
 				onSelect={handleSelect}
 			/>
+
+			{selectedIncident && mapFocus && (
+				<div
+					style={{
+						position: "absolute",
+						bottom: 20,
+						left: 272,
+						right: 292,
+						display: "flex",
+						justifyContent: "center",
+						zIndex: 20,
+						pointerEvents: "none",
+					}}
+				>
+					<MapEntityDetail
+						focus={mapFocus}
+						incident={selectedIncident}
+						allies={rankedAllies}
+						allyRoutes={allyRoutes}
+						serviceRoutes={serviceRoutes}
+						serviceProgress={serviceProgress}
+						onClose={() => setMapFocus(null)}
+					/>
+				</div>
+			)}
 
 			{/* Right detail panel */}
 			{selectedIncident && (
@@ -1585,6 +1900,8 @@ export const SoteriaMap = () => {
 					allyRoutes={allyRoutes}
 					serviceRoutes={serviceRoutes}
 					serviceProgress={serviceProgress}
+					mapFocus={mapFocus}
+					onMapFocus={handleMapFocus}
 					onClose={() => setSelectedId(null)}
 				/>
 			)}
