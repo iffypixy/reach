@@ -47,8 +47,7 @@ export const fetchEmergencyFootprints = async (): Promise<EmergencyFootprint[]> 
 		const data = (await res.json()) as { elements: OsmElement[] };
 
 		const nodeMap = new Map<number, [number, number]>();
-		for (const el of data.elements)
-			if (el.type === "node") nodeMap.set(el.id, [el.lon, el.lat]);
+		for (const el of data.elements) if (el.type === "node") nodeMap.set(el.id, [el.lon, el.lat]);
 
 		const ways: Array<{ amenity: string; coords: [number, number][]; center: [number, number] }> =
 			[];

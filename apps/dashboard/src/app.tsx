@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import type { Incident } from "~/domain/types";
 import { AddIncidentPanel } from "~/features/incidents/AddIncidentPanel";
 import { RecommenderPanel } from "~/features/incidents/RecommenderPanel";
 import { MapView } from "~/features/map/MapView";
@@ -8,11 +7,14 @@ import { useIncidentsStore } from "~/store/incidents";
 export const App = () => {
 	const loadSeed = useIncidentsStore((s) => s.loadSeed);
 	const addIncident = useIncidentsStore((s) => s.addIncident);
-	const [focusIncident, setFocusIncident] = useState<Incident | null>(null);
+	const [focusIncidentId, setFocusIncidentId] = useState<string | null>(null);
+	const focusIncident = useIncidentsStore((s) =>
+		focusIncidentId ? (s.incidents.find((i) => i.id === focusIncidentId) ?? null) : null,
+	);
 
 	useEffect(() => loadSeed(), [loadSeed]);
 
-	const handleAdd = () => setFocusIncident(addIncident());
+	const handleAdd = () => setFocusIncidentId(addIncident().id);
 
 	return (
 		<div className="flex h-screen w-screen flex-col bg-slate-100">
@@ -36,7 +38,7 @@ export const App = () => {
 				</main>
 
 				<aside className="w-80 shrink-0 overflow-y-auto border-l border-slate-200 bg-white">
-					<RecommenderPanel />
+					<RecommenderPanel focusIncident={focusIncident} />
 				</aside>
 			</div>
 		</div>

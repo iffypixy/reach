@@ -1,7 +1,13 @@
 import { DEMO_TIME_SCALE } from "~/config/hk";
 import { STATIONS } from "~/data/stations";
 import { INCIDENT_SERVICES } from "~/domain/mapping";
-import type { Coord, DispatchUnit, IncidentCategory, ServiceCategory, Station } from "~/domain/types";
+import type {
+	Coord,
+	DispatchUnit,
+	IncidentCategory,
+	ServiceCategory,
+	Station,
+} from "~/domain/types";
 import { haversine } from "~/lib/geo";
 import { straightRoute } from "~/lib/routing";
 
@@ -32,7 +38,8 @@ const randomInBand = (): Coord => ({
 
 const projectCoord = (origin: Coord, distKm: number, bearingRad: number): Coord => ({
 	lat: origin.lat + (distKm / 111) * Math.cos(bearingRad),
-	lng: origin.lng + (distKm / (111 * Math.cos((origin.lat * Math.PI) / 180))) * Math.sin(bearingRad),
+	lng:
+		origin.lng + (distKm / (111 * Math.cos((origin.lat * Math.PI) / 180))) * Math.sin(bearingRad),
 });
 
 /** random central-band point at least MIN_ORIGIN_KM from the incident */

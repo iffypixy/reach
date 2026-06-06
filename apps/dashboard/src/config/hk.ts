@@ -11,6 +11,11 @@ export const HK_BOUNDS = {
 	maxLat: 22.55,
 } as const;
 
+/** max haversine distance for responder recommendations (km) */
+export const RESPONDER_MAX_RADIUS_KM = 15;
+
+export const TOP_RESPONDER_COUNT = 10;
+
 /** 1 = real time: a 20 min ETA takes 20 real minutes on screen (no speed-up) */
 export const DEMO_TIME_SCALE = 1;
 

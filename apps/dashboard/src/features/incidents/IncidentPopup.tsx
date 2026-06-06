@@ -33,10 +33,15 @@ export const IncidentPopupContent = ({ incident }: Props) => (
 		</div>
 		<div className="border-t border-white/10 pt-2 text-xs text-slate-400">
 			Citizen responders:{" "}
-			{incident.respondersContacted ? (
-				<span className="font-medium text-green-400">Contacted</span>
+			{incident.contactedResponderIds.length > 0 ? (
+				<span className="font-medium text-green-400">
+					{incident.contactedResponderIds.length} contacted
+				</span>
 			) : (
-				<span className="text-slate-500">Not contacted</span>
+				<span className="text-slate-500">None contacted</span>
+			)}
+			{incident.incidentHandled && (
+				<span className="ml-2 font-medium text-blue-400">· Handled</span>
 			)}
 		</div>
 	</div>

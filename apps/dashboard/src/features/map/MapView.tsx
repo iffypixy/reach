@@ -20,11 +20,14 @@ import {
 	HK_MAX_BOUNDS,
 	updateEmergencyBuildingFootprints,
 } from "~/features/map/mapTheme";
-import { fetchEmergencyFootprints } from "~/lib/overpass";
+import { syncResponderLayers, updateResponderRoutesOnMap } from "~/features/map/responderMapLayers";
+import type { RankedResponder } from "~/features/recommender/rankResponders";
 import { useDispatchAnimation } from "~/features/map/useDispatchAnimation";
 import { interpolateAlongRoute } from "~/lib/geo";
+import { fetchEmergencyFootprints } from "~/lib/overpass";
 import { unitRoute } from "~/lib/routing";
 import { useIncidentsStore } from "~/store/incidents";
+import { useRecommendationsStore } from "~/store/recommendations";
 
 type Props = {
 	focusIncident: Incident | null;
@@ -80,15 +83,24 @@ const unitMarkerEl = (color: string) => {
 	return el;
 };
 
+const EMPTY_RECOMMENDATIONS: RankedResponder[] = [];
+
 export const MapView = ({ focusIncident }: Props) => {
 	const incidents = useIncidentsStore((s) => s.incidents);
+	const recommendations = useRecommendationsStore((s) =>
+		focusIncident
+			? (s.recommendationsByIncidentId[focusIncident.id] ?? EMPTY_RECOMMENDATIONS)
+			: EMPTY_RECOMMENDATIONS,
+	);
 	const [ready, setReady] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<MapLibreMap | null>(null);
 	const unitMarkersRef = useRef<Map<string, Marker>>(new Map());
+	const responderMarkersRef = useRef<Map<string, Marker>>(new Map());
 	const popupRef = useRef<Popup | null>(null);
 	const popupRootRef = useRef<Root | null>(null);
 	const syncedLinesRef = useRef<Set<string>>(new Set());
+	const syncedResponderLinesRef = useRef<Set<string>>(new Set());
 	const incidentsRef = useRef(incidents);
 
 	incidentsRef.current = incidents;
@@ -159,6 +171,8 @@ export const MapView = ({ focusIncident }: Props) => {
 			popupRef.current?.remove();
 			for (const marker of unitMarkersRef.current.values()) marker.remove();
 			unitMarkersRef.current.clear();
+			for (const marker of responderMarkersRef.current.values()) marker.remove();
+			responderMarkersRef.current.clear();
 			map.remove();
 			mapRef.current = null;
 		};
@@ -175,6 +189,24 @@ export const MapView = ({ focusIncident }: Props) => {
 		if (!map || !ready) return;
 		syncDispatchLayers(map, incidents, unitMarkersRef, syncedLinesRef);
 	}, [incidents, ready]);
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!map || !ready) return;
+		syncResponderLayers(
+			map,
+			focusIncident,
+			recommendations,
+			responderMarkersRef,
+			syncedResponderLinesRef,
+		);
+	}, [focusIncident, recommendations, ready]);
+
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!map || !ready || !focusIncident) return;
+		updateResponderRoutesOnMap(map, recommendations, focusIncident);
+	}, [recommendations, focusIncident, ready]);
 
 	useEffect(() => {
 		const map = mapRef.current;
@@ -210,6 +242,9 @@ export const MapView = ({ focusIncident }: Props) => {
 					</span>
 					<span className="flex items-center gap-1">
 						<span className="size-2 rounded-full bg-orange-500" /> Incident
+					</span>
+					<span className="flex items-center gap-1">
+						<span className="size-2 rounded-full bg-purple-500" /> Responder
 					</span>
 				</div>
 				<p className="mt-1.5 text-[10px] text-slate-500">Other buildings: grey 70%</p>

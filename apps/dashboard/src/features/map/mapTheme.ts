@@ -92,8 +92,7 @@ export const applyMapTheme = (map: MapLibreMap) => {
 	const hasExtrusion = layers.some((layer) => layer.type === "fill-extrusion");
 
 	for (const layer of layers) {
-		if (layer.type === "background")
-			map.setPaintProperty(layer.id, "background-color", "#000000");
+		if (layer.type === "background") map.setPaintProperty(layer.id, "background-color", "#000000");
 
 		if (layer.type === "symbol" && !isOurLayer(layer.id)) {
 			if (ALLOWED_LABEL_LAYERS.has(layer.id)) styleVisibleLabel(map, layer.id);
@@ -107,8 +106,7 @@ export const applyMapTheme = (map: MapLibreMap) => {
 		if (layer.type === "fill" && !/building/i.test(layer.id))
 			map.setPaintProperty(layer.id, "fill-color", "#0a0a0a");
 
-		if (layer.type === "line")
-			map.setPaintProperty(layer.id, "line-color", "#1a1a1a");
+		if (layer.type === "line") map.setPaintProperty(layer.id, "line-color", "#1a1a1a");
 
 		if (layer.type === "fill-extrusion") {
 			map.setLayoutProperty(layer.id, "visibility", "visible");

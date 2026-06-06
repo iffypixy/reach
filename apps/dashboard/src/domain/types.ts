@@ -45,5 +45,6 @@ export type Incident = {
 	createdAt: number;
 	source: "seed" | "operator";
 	dispatchUnits: DispatchUnit[];
-	respondersContacted: boolean;
+	contactedResponderIds: string[];
+	incidentHandled: boolean;
 };
