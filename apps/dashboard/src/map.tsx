@@ -990,7 +990,12 @@ const AllyMarker = ({
 	const pinStroke = response === "accepted" ? Z.gold : response === "declined" ? "#333" : "#4ade4a";
 	const rankOpacity = active || rank === 0 ? 1 : rank === 1 ? 0.75 : 0.5;
 	return (
-		<Marker longitude={ally.coords[0]} latitude={ally.coords[1]} anchor="center">
+		<Marker
+			longitude={ally.coords[0]}
+			latitude={ally.coords[1]}
+			anchor="center"
+			style={{ zIndex: active ? 11 : 1 }}
+		>
 			<div
 				title={ally.name}
 				onClick={(e) => {
@@ -1246,6 +1251,10 @@ const RadiusCircle = ({ coords }: { coords: [number, number] }) => (
 const WALK_KMH = 8;
 const walkEtaMinutes = (distanceM: number) => (distanceM / 1000 / WALK_KMH) * 60;
 
+const allServicesArrived = (incident: Incident, now = Date.now()) =>
+	incident.emergencyServices.length > 0 &&
+	incident.emergencyServices.every((svc) => computeServiceProgress(svc, now) >= 1);
+
 type MapPopupAnchor =
 	| "center"
 	| "top"
@@ -1257,32 +1266,33 @@ type MapPopupAnchor =
 	| "bottom-left"
 	| "bottom-right";
 
+const PIN_CLEARANCE = 32;
+
 const allyPopupPlacement = (
 	allyCoords: [number, number],
 	incidentCoords: [number, number],
 ): { anchor: MapPopupAnchor; offset: [number, number] } => {
 	const dx = incidentCoords[0] - allyCoords[0];
 	const dy = incidentCoords[1] - allyCoords[1];
-	const PIN_GAP = 14;
 
-	if (Math.hypot(dx, dy) < 1e-9) return { anchor: "bottom", offset: [0, -36] };
+	if (Math.hypot(dx, dy) < 1e-9) return { anchor: "bottom", offset: [0, -PIN_CLEARANCE] };
 
 	const ax = Math.abs(dx);
 	const ay = Math.abs(dy);
 
 	if (ax > ay * 1.4) {
-		if (dx > 0) return { anchor: "right", offset: [-PIN_GAP, 0] };
-		return { anchor: "left", offset: [PIN_GAP, 0] };
+		if (dx > 0) return { anchor: "right", offset: [-PIN_CLEARANCE, 0] };
+		return { anchor: "left", offset: [PIN_CLEARANCE, 0] };
 	}
 	if (ay > ax * 1.4) {
-		if (dy > 0) return { anchor: "top", offset: [0, PIN_GAP] };
-		return { anchor: "bottom", offset: [0, -36] };
+		if (dy > 0) return { anchor: "top", offset: [0, PIN_CLEARANCE] };
+		return { anchor: "bottom", offset: [0, -PIN_CLEARANCE] };
 	}
 
-	if (dx > 0 && dy > 0) return { anchor: "top-right", offset: [-PIN_GAP, PIN_GAP] };
-	if (dx < 0 && dy > 0) return { anchor: "top-left", offset: [PIN_GAP, PIN_GAP] };
-	if (dx > 0 && dy < 0) return { anchor: "bottom-right", offset: [-PIN_GAP, -PIN_GAP] };
-	return { anchor: "bottom-left", offset: [PIN_GAP, -PIN_GAP] };
+	if (dx > 0 && dy > 0) return { anchor: "top-right", offset: [PIN_CLEARANCE, -PIN_CLEARANCE] };
+	if (dx < 0 && dy > 0) return { anchor: "top-left", offset: [-PIN_CLEARANCE, -PIN_CLEARANCE] };
+	if (dx > 0 && dy < 0) return { anchor: "bottom-right", offset: [PIN_CLEARANCE, PIN_CLEARANCE] };
+	return { anchor: "bottom-left", offset: [-PIN_CLEARANCE, PIN_CLEARANCE] };
 };
 
 const AllyMapPopup = ({
@@ -1413,6 +1423,7 @@ const AllyPanel = ({
 	allyRoutes,
 	serviceRoutes: _serviceRoutes,
 	serviceProgress: _serviceProgress,
+	incidentClosed,
 	focusedAllyId,
 	activeAllyId,
 	onClose,
@@ -1425,6 +1436,7 @@ const AllyPanel = ({
 	allyRoutes: Record<string, RouteData>;
 	serviceRoutes: Record<string, RouteData>;
 	serviceProgress: Record<string, number>;
+	incidentClosed: boolean;
 	focusedAllyId: string | null;
 	activeAllyId: string | null;
 	onClose: () => void;
@@ -1533,23 +1545,32 @@ const AllyPanel = ({
 
 					<button
 						type="button"
-						onClick={() => onSetHandled(!incident.handled)}
+						disabled={incidentClosed}
+						onClick={() => {
+							if (incidentClosed) return;
+							onSetHandled(!incident.handled);
+						}}
 						style={{
 							width: "100%",
 							marginTop: 12,
-							background: incident.handled ? "rgba(50, 168, 50, 0.15)" : "rgba(255,255,255,0.04)",
-							border: `1px solid ${incident.handled ? Z.green + "44" : Z.border}`,
-							color: incident.handled ? Z.green : Z.muted,
+							background: incidentClosed
+								? `${Z.gold}22`
+								: incident.handled
+									? "rgba(50, 168, 50, 0.15)"
+									: "rgba(255,255,255,0.04)",
+							border: `1px solid ${incidentClosed ? Z.gold + "66" : incident.handled ? Z.green + "44" : Z.border}`,
+							color: incidentClosed ? Z.gold : incident.handled ? Z.green : Z.muted,
 							fontSize: 10,
 							fontWeight: 600,
 							padding: "7px 0",
 							borderRadius: 8,
-							cursor: "pointer",
+							cursor: incidentClosed ? "default" : "pointer",
 							textTransform: "uppercase",
 							letterSpacing: "0.06em",
+							opacity: incidentClosed ? 1 : undefined,
 						}}
 					>
-						{incident.handled ? "Reopen incident" : "Mark done"}
+						{incidentClosed ? "Incident Closed" : incident.handled ? "Reopen incident" : "Mark done"}
 					</button>
 				</div>
 
@@ -1788,7 +1809,18 @@ export const SoteriaMap = () => {
 	useEffect(() => setActiveAllyId(null), [selectedId]);
 
 	useEffect(() => {
-		const id = setInterval(() => setTick((t) => t + 1), 1000);
+		const id = setInterval(() => {
+			setTick((t) => t + 1);
+			setIncidents((prev) => {
+				let changed = false;
+				const next = prev.map((inc) => {
+					if (inc.handled || !allServicesArrived(inc)) return inc;
+					changed = true;
+					return { ...inc, handled: true };
+				});
+				return changed ? next : prev;
+			});
+		}, 1000);
 		return () => clearInterval(id);
 	}, []);
 
@@ -2032,16 +2064,21 @@ export const SoteriaMap = () => {
 						))}
 
 						{selectedIncident &&
-							topAllies.map((ally, rank) => (
-								<AllyMarker
-									key={ally.id}
-									ally={ally}
-									rank={rank}
-									response={selectedIncident.allyStatuses[ally.id]}
-									active={activeRanked?.ally.id === ally.id}
-									onClick={() => setActiveAllyId(ally.id)}
-								/>
-							))}
+							topAllies
+								.filter((ally) => ally.id !== activeRanked?.ally.id)
+								.map((ally) => {
+									const rank = topAllies.findIndex((a) => a.id === ally.id);
+									return (
+										<AllyMarker
+											key={ally.id}
+											ally={ally}
+											rank={rank}
+											response={selectedIncident.allyStatuses[ally.id]}
+											active={false}
+											onClick={() => setActiveAllyId(ally.id)}
+										/>
+									);
+								})}
 
 						{selectedIncident &&
 							selectedIncident.emergencyServices.map((svc) => {
@@ -2060,19 +2097,28 @@ export const SoteriaMap = () => {
 							})}
 
 						{selectedIncident && activeRanked && (
-							<AllyMapPopup
-								ally={activeRanked.ally}
-								incidentCoords={selectedIncident.coords}
-								matchedCerts={activeRanked.matchedCerts}
-								response={selectedIncident.allyStatuses[activeRanked.ally.id]}
-								walkEtaMin={
-									allyRoutes[activeRanked.ally.id]
-										? Math.ceil(walkEtaMinutes(allyRoutes[activeRanked.ally.id].distanceM))
-										: null
-								}
-								onAccept={() => setAllyResponse(selectedIncident.id, activeRanked.ally.id, "accepted")}
-								onDecline={() => setAllyResponse(selectedIncident.id, activeRanked.ally.id, "declined")}
-							/>
+							<>
+								<AllyMapPopup
+									ally={activeRanked.ally}
+									incidentCoords={selectedIncident.coords}
+									matchedCerts={activeRanked.matchedCerts}
+									response={selectedIncident.allyStatuses[activeRanked.ally.id]}
+									walkEtaMin={
+										allyRoutes[activeRanked.ally.id]
+											? Math.ceil(walkEtaMinutes(allyRoutes[activeRanked.ally.id].distanceM))
+											: null
+									}
+									onAccept={() => setAllyResponse(selectedIncident.id, activeRanked.ally.id, "accepted")}
+									onDecline={() => setAllyResponse(selectedIncident.id, activeRanked.ally.id, "declined")}
+								/>
+								<AllyMarker
+									ally={activeRanked.ally}
+									rank={topAllies.findIndex((a) => a.id === activeRanked.ally.id)}
+									response={selectedIncident.allyStatuses[activeRanked.ally.id]}
+									active
+									onClick={() => setActiveAllyId(activeRanked.ally.id)}
+								/>
+							</>
 						)}
 						</MapGL>
 						</div>
@@ -2086,6 +2132,7 @@ export const SoteriaMap = () => {
 						allyRoutes={allyRoutes}
 						serviceRoutes={serviceRoutes}
 						serviceProgress={serviceProgress}
+						incidentClosed={allServicesArrived(selectedIncident)}
 						focusedAllyId={activeRanked?.ally.id ?? null}
 						activeAllyId={activeAllyId}
 						onClose={() => setSelectedId(null)}
