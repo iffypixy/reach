@@ -1,1 +1,98 @@
 @import "tailwindcss";
+
+@font-face {
+	font-family: "DB Screen Sans";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/dbscreensans-regular.woff2") format("woff2");
+}
+@font-face {
+	font-family: "DB Screen Sans";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/fonts/dbscreensans-medium.woff2") format("woff2");
+}
+@font-face {
+	font-family: "DB Screen Sans";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/fonts/dbscreensans-semibold.woff2") format("woff2");
+}
+@font-face {
+	font-family: "DB Screen Sans";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/fonts/dbscreensans-bold.woff2") format("woff2");
+}
+@font-face {
+	font-family: "DB Screen Head";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/dbscreenhead-regular.woff2") format("woff2");
+}
+@font-face {
+	font-family: "DB Screen Head";
+	font-style: normal;
+	font-weight: 900;
+	font-display: swap;
+	src: url("/fonts/dbscreenhead-black.woff2") format("woff2");
+}
+
+html,
+body,
+#root {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+@keyframes pulseRing {
+	0% {
+		transform: scale(0.6);
+		opacity: 0.9;
+	}
+	70% {
+		transform: scale(1.9);
+		opacity: 0;
+	}
+	100% {
+		transform: scale(1.9);
+		opacity: 0;
+	}
+}
+
+@keyframes liveBlip {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.25;
+	}
+}
+
+@keyframes slideInRight {
+	from {
+		transform: translateX(16px);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+.soteria-popup .mapboxgl-popup-content {
+	background: transparent;
+	padding: 0;
+	box-shadow: none;
+}
+.soteria-popup .mapboxgl-popup-tip {
+	display: none;
+}
