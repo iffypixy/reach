@@ -1,55 +1,23 @@
 @import "tailwindcss";
 
-@font-face {
-	font-family: "DB Screen Sans";
-	font-style: normal;
-	font-weight: 400;
-	font-display: swap;
-	src: url("/fonts/dbscreensans-regular.woff2") format("woff2");
-}
-@font-face {
-	font-family: "DB Screen Sans";
-	font-style: normal;
-	font-weight: 500;
-	font-display: swap;
-	src: url("/fonts/dbscreensans-medium.woff2") format("woff2");
-}
-@font-face {
-	font-family: "DB Screen Sans";
-	font-style: normal;
-	font-weight: 600;
-	font-display: swap;
-	src: url("/fonts/dbscreensans-semibold.woff2") format("woff2");
-}
-@font-face {
-	font-family: "DB Screen Sans";
-	font-style: normal;
-	font-weight: 700;
-	font-display: swap;
-	src: url("/fonts/dbscreensans-bold.woff2") format("woff2");
-}
-@font-face {
-	font-family: "DB Screen Head";
-	font-style: normal;
-	font-weight: 400;
-	font-display: swap;
-	src: url("/fonts/dbscreenhead-regular.woff2") format("woff2");
-}
-@font-face {
-	font-family: "DB Screen Head";
-	font-style: normal;
-	font-weight: 900;
-	font-display: swap;
-	src: url("/fonts/dbscreenhead-black.woff2") format("woff2");
-}
-
 html,
 body,
 #root {
 	margin: 0;
 	padding: 0;
+	width: 100%;
 	height: 100%;
 	overflow: hidden;
+	background-color: #1a1d23;
+	background-image:
+		linear-gradient(rgba(26, 29, 35, 0.9), rgba(26, 29, 35, 0.9)),
+		url("/hk-skyline-bg.png");
+	background-size: cover;
+	background-position: center;
+	background-attachment: fixed;
+	background-repeat: no-repeat;
+	font-family: "Montserrat", sans-serif;
+	font-weight: 300;
 }
 
 @keyframes pulseRing {
@@ -95,4 +63,53 @@ body,
 }
 .soteria-popup .mapboxgl-popup-tip {
 	display: none;
+}
+
+@keyframes hotspotGlow {
+	0%,
+	100% {
+		opacity: 0.55;
+	}
+	50% {
+		opacity: 0.85;
+	}
+}
+
+@keyframes starPulse {
+	0%,
+	100% {
+		transform: scale(1);
+		filter: drop-shadow(0 0 6px #32a832);
+	}
+	50% {
+		transform: scale(1.08);
+		filter: drop-shadow(0 0 14px #32a832);
+	}
+}
+
+@keyframes livePulse {
+	0%,
+	100% {
+		opacity: 1;
+		box-shadow:
+			0 0 4px #22c55e,
+			0 0 10px rgba(34, 197, 94, 0.7);
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.3;
+		box-shadow:
+			0 0 2px #22c55e,
+			0 0 4px rgba(34, 197, 94, 0.25);
+		transform: scale(0.88);
+	}
+}
+
+.live-indicator-bulb {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #22c55e;
+	flex-shrink: 0;
+	animation: livePulse 1.4s ease-in-out infinite;
 }
