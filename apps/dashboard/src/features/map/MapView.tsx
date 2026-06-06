@@ -56,7 +56,9 @@ const incidentsGeoJson = (incidents: Incident[]): PointFeatureCollection => ({
 const unitMarkerEl = (color: string) => {
 	const el = document.createElement("div");
 	el.className = "dispatch-unit-marker";
-	el.style.cssText = "position: relative; width: 14px; height: 14px;";
+	// no position here: the .maplibregl-marker class sets position:absolute, which both
+	// anchors the marker and acts as the containing block for the absolute ETA label below
+	el.style.cssText = "width: 14px; height: 14px;";
 
 	const dot = document.createElement("div");
 	dot.style.cssText = `
