@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { OnboardingLayout } from "~/components/onboarding-layout";
 import { useSession } from "~/lib/session";
 import type { User } from "~/lib/types";
+import { voice } from "~/lib/voice";
 
 const isValidDateOfBirth = (value: string) => {
 	if (!value) return false;
@@ -59,8 +60,8 @@ export const InfoPage = () => {
 	return (
 		<OnboardingLayout
 			step={3}
-			title="Almost there"
-			subtitle="Tell us a bit about yourself so dispatch can identify you during an emergency."
+			title={voice.register.infoTitle}
+			subtitle={voice.register.infoSubtitle}
 		>
 			<div className="flex flex-col gap-5">
 				<div className="form-field">
@@ -120,9 +121,9 @@ export const InfoPage = () => {
 					onClick={createAccount}
 					disabled={!canSubmit || submitting}
 					className="btn-primary"
-					aria-label="done"
+					aria-label="continue"
 				>
-					{submitting ? "Creating account…" : "Done"}
+					{submitting ? "Saving…" : "Continue"}
 				</button>
 			</div>
 		</OnboardingLayout>

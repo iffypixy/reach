@@ -1,16 +1,16 @@
-import { Clock, Power, Radio } from "lucide-react";
+import { Power, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
 	AVAILABILITY_OPTIONS,
 	availabilityProgress,
-	formatAvailableUntil,
 	formatRemaining,
 	isAvailable,
 	PROGRESS_RING_CIRCUMFERENCE,
 	PROGRESS_RING_RADIUS,
 	type AvailabilityDuration,
 } from "~/lib/availability";
+import { voice } from "~/lib/voice";
 
 const DEFAULT_DURATION: AvailabilityDuration = "6h";
 const CONFIRM_ENABLE_MS = 4000;
@@ -21,6 +21,43 @@ type AvailabilityToggleProps = {
 	selectedDuration: AvailabilityDuration | null;
 	onEnable: (duration: AvailabilityDuration) => void;
 	onDisable: () => void;
+};
+
+type StatusCopy = {
+	title: string;
+	hint: string;
+	titleClass: string;
+	live: string;
+};
+
+const statusCopy = (
+	active: boolean,
+	confirming: boolean,
+	pendingLabel: string,
+	remaining: string | null,
+): StatusCopy => {
+	if (active) {
+		return {
+			title: voice.availability.onTitle,
+			hint: voice.availability.onHint(remaining),
+			titleClass: "text-success",
+			live: remaining ? `On call, ${remaining}` : voice.availability.onTitle,
+		};
+	}
+	if (confirming) {
+		return {
+			title: voice.availability.confirmTitle,
+			hint: voice.availability.confirmHint(pendingLabel),
+			titleClass: "text-secondary",
+			live: `Confirm going on call for ${pendingLabel}`,
+		};
+	}
+	return {
+		title: voice.availability.offTitle,
+		hint: voice.availability.offHint,
+		titleClass: "text-text",
+		live: voice.availability.offTitle,
+	};
 };
 
 export const AvailabilityToggle = ({
@@ -86,79 +123,62 @@ export const AvailabilityToggle = ({
 			? availabilityProgress(availableSince, availableUntil)
 			: 0;
 	const progressOffset = PROGRESS_RING_CIRCUMFERENCE * (1 - progress);
-
-	const statusMessage = active
-		? `Available until ${availableUntil ? formatAvailableUntil(availableUntil) : ""}${remaining ? `, ${remaining}` : ""}`
-		: confirmEnable
-			? `Confirm going available for ${pendingLabel}`
-			: "Not available for emergencies";
+	const confirming = confirmEnable && !active;
+	const status = statusCopy(active, confirming, pendingLabel, remaining);
 
 	return (
 		<div className="availability-card">
 			<div className="sr-only" aria-live="polite" aria-atomic="true">
-				{statusMessage}
+				{status.live}
 			</div>
 
-			<p className="text-center text-2xl font-extrabold tracking-tight text-ink">
-				{active ? "Ready to help" : "Not available"}
-			</p>
-			<p className="mt-1.5 text-center text-sm text-muted">
-				{active
-					? "On call — tap button to go off"
-					: confirmEnable
-						? `Tap the button to confirm · ${pendingLabel}`
-						: "Choose a duration, then tap the button"}
-			</p>
+			<div className="availability-status-block">
+				<p className={`type-body-strong ${status.titleClass}`}>{status.title}</p>
+				<p className="type-caption">{status.hint}</p>
+			</div>
 
-			<div className="availability-hero-wrap mx-auto mt-6">
-				{active && availableSince && (
-					<svg
-						className="availability-progress"
-						viewBox="0 0 100 100"
-						aria-hidden="true"
-					>
-						<circle
-							cx="50"
-							cy="50"
-							r={PROGRESS_RING_RADIUS}
-							className="availability-progress-track"
-						/>
-						<circle
-							cx="50"
-							cy="50"
-							r={PROGRESS_RING_RADIUS}
-							className="availability-progress-fill"
-							strokeDasharray={PROGRESS_RING_CIRCUMFERENCE}
-							strokeDashoffset={progressOffset}
-						/>
-					</svg>
-				)}
+			<div className="availability-hero-wrap">
+				<svg
+					className={`availability-progress ${active && availableSince ? "" : "invisible"}`}
+					viewBox="0 0 100 100"
+					aria-hidden="true"
+				>
+					<circle cx="50" cy="50" r={PROGRESS_RING_RADIUS} className="availability-progress-track" />
+					<circle
+						cx="50"
+						cy="50"
+						r={PROGRESS_RING_RADIUS}
+						className="availability-progress-fill"
+						strokeDasharray={PROGRESS_RING_CIRCUMFERENCE}
+						strokeDashoffset={progressOffset}
+					/>
+				</svg>
 				<button
 					type="button"
 					onClick={handleMainButton}
 					aria-pressed={active}
 					aria-label={
 						active
-							? "go unavailable"
-							: confirmEnable
-								? `confirm go available for ${pendingLabel}`
-								: `go available for ${pendingLabel}`
+							? "go off duty"
+							: confirming
+								? `confirm go on call for ${pendingLabel}`
+								: `go on call for ${pendingLabel}`
 					}
-					className={`availability-hero ${active ? "availability-hero-active" : ""} ${confirmEnable && !active ? "availability-hero-confirm" : ""}`}
+					className={`availability-hero ${active ? "availability-hero-active" : ""} ${confirming ? "availability-hero-confirm" : ""}`}
 				>
 					<span
-						className={`availability-hero-knob ${active ? "availability-hero-knob-active" : ""}`}
+						className={`availability-hero-knob ${active ? "availability-hero-knob-active" : ""} ${confirming ? "availability-hero-knob-confirm" : ""}`}
 					>
 						{active ? (
-							<Radio size={32} strokeWidth={1.75} aria-hidden />
+							<Radio size={28} strokeWidth={1.75} aria-hidden />
 						) : (
-							<Power size={32} strokeWidth={1.75} aria-hidden />
+							<Power size={28} strokeWidth={1.75} aria-hidden />
 						)}
 					</span>
 				</button>
 			</div>
 
-			<div className="duration-pills mt-5" role="group" aria-label="availability duration">
+			<div className="duration-pills" role="group" aria-label="availability duration">
 				{AVAILABILITY_OPTIONS.map((option) => {
 					const isActive = active && selectedDuration === option.duration;
 					const isPending = !active && pendingDuration === option.duration;
@@ -176,8 +196,8 @@ export const AvailabilityToggle = ({
 							aria-pressed={isActive || isPending}
 							aria-label={
 								active
-									? `extend availability to ${option.label}`
-									: `select ${option.label}`
+									? `extend on call to ${option.ariaLabel}`
+									: `select ${option.ariaLabel}`
 							}
 						>
 							{option.label}
@@ -185,20 +205,6 @@ export const AvailabilityToggle = ({
 					);
 				})}
 			</div>
-
-			{active && availableUntil && (
-				<div className="availability-meta mt-5">
-					<Clock size={18} strokeWidth={1.75} className="shrink-0 text-brand" />
-					<div className="min-w-0 flex-1">
-						<p className="text-sm font-medium text-ink">
-							Until {formatAvailableUntil(availableUntil)}
-						</p>
-						{remaining && (
-							<p className="mt-0.5 text-sm font-bold text-active">{remaining}</p>
-						)}
-					</div>
-				</div>
-			)}
 		</div>
 	);
 };

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { OnboardingLayout } from "~/components/onboarding-layout";
 import { isValidPhone, sendOtp, sendOtpErrorMessage } from "~/lib/auth";
 import { useSession } from "~/lib/session";
+import { voice } from "~/lib/voice";
 
 export const RegisterPage = () => {
 	const navigate = useNavigate();
@@ -45,13 +46,13 @@ export const RegisterPage = () => {
 	return (
 		<OnboardingLayout
 			step={1}
-			title="What's your number?"
-			subtitle="We'll text you a code to verify your identity. Standard message rates may apply."
+			title={voice.register.phoneTitle}
+			subtitle={voice.register.phoneSubtitle}
 		>
 			<div className="flex flex-col gap-5">
 				<div className="form-field">
 					<label htmlFor="phone" className="form-label">
-						Mobile number
+						Mobile
 					</label>
 					<input
 						ref={inputRef}
@@ -68,7 +69,7 @@ export const RegisterPage = () => {
 							if (e.key !== "Enter") return;
 							continueSignup();
 						}}
-						placeholder="+1 555 123 4567"
+						placeholder={voice.register.phonePlaceholder}
 						className="form-input"
 						aria-label="mobile number"
 						aria-invalid={!!error}
@@ -88,7 +89,7 @@ export const RegisterPage = () => {
 					className="btn-primary"
 					aria-label="continue"
 				>
-					{loading ? "Sending code…" : "Continue"}
+					{loading ? "Sending…" : "Continue"}
 				</button>
 			</div>
 		</OnboardingLayout>

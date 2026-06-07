@@ -5,6 +5,7 @@ import { OnboardingLayout } from "~/components/onboarding-layout";
 import { OtpInput } from "~/components/otp-input";
 import { sendOtp, sendOtpErrorMessage, verifyOtp } from "~/lib/auth";
 import { useSession } from "~/lib/session";
+import { voice } from "~/lib/voice";
 
 const RESEND_DELAY_S = 30;
 
@@ -69,7 +70,7 @@ export const VerifyPage = () => {
 		<OnboardingLayout
 			step={2}
 			title="Enter your code"
-			subtitle={`We sent a 6-digit code to ${maskPhone(phone)}`}
+			subtitle={voice.register.verifySubtitle(maskPhone(phone))}
 		>
 			<div className="flex flex-col items-center gap-6">
 				<OtpInput
@@ -80,7 +81,7 @@ export const VerifyPage = () => {
 				/>
 
 				{verifying && (
-					<p className="text-sm text-muted" aria-live="polite">
+					<p className="type-caption" aria-live="polite">
 						Verifying…
 					</p>
 				)}
@@ -93,7 +94,7 @@ export const VerifyPage = () => {
 
 				<div className="text-center">
 					{resendIn > 0 ? (
-						<p className="text-sm text-muted">Resend code in {resendIn}s</p>
+						<p className="type-caption">Resend in {resendIn}s</p>
 					) : (
 						<button
 							type="button"
@@ -110,13 +111,13 @@ export const VerifyPage = () => {
 				<button
 					type="button"
 					onClick={() => navigate("/register")}
-					className="text-sm text-muted underline"
+					className="btn-link text-muted"
 					aria-label="change phone number"
 				>
 					Change number
 				</button>
 
-				<p className="text-xs text-muted/60">Demo code: 123456</p>
+				<p className="type-caption opacity-60">Demo code: 123456</p>
 			</div>
 		</OnboardingLayout>
 	);

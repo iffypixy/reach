@@ -7,6 +7,7 @@ import { CERTIFICATION_GROUPS } from "~/lib/certifications";
 import { useSession } from "~/lib/session";
 import type { Certification, CertificationType } from "~/lib/types";
 import { useRequireAuth } from "~/lib/use-require-auth";
+import { voice } from "~/lib/voice";
 
 export const SkillsPage = () => {
 	const navigate = useNavigate();
@@ -39,15 +40,13 @@ export const SkillsPage = () => {
 	return (
 		<OnboardingLayout
 			step={4}
-			title="What can you help with?"
-			subtitle="Select the skills you have. You can photograph your certificates to verify them from your profile later."
+			title={voice.register.skillsTitle}
+			subtitle={voice.register.skillsSubtitle}
 		>
 			<div className="flex flex-col gap-6">
 				{CERTIFICATION_GROUPS.map((group) => (
 					<div key={group.label}>
-						<p className="mb-3 text-xs font-bold tracking-wide text-muted uppercase">
-							{group.label}
-						</p>
+						<p className="type-label mb-3">{group.label}</p>
 						<div className="flex flex-col gap-2">
 							{group.options.map((cert) => (
 								<CertCard
@@ -62,18 +61,15 @@ export const SkillsPage = () => {
 					</div>
 				))}
 
-				<label className="flex cursor-pointer gap-3 rounded-lg bg-card p-4">
+				<label className="flex cursor-pointer gap-3 soteria-elevated-card p-4">
 					<input
 						type="checkbox"
 						checked={confirmed}
 						onChange={(e) => setConfirmed(e.target.checked)}
-						className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+						className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
 						aria-label="confirm skills are accurate"
 					/>
-					<span className="text-sm leading-relaxed text-ink">
-						I confirm these are my real skills and understand false claims may lead to
-						removal.
-					</span>
+					<span className="type-body">{voice.register.skillsConfirm}</span>
 				</label>
 
 				<button
@@ -83,7 +79,7 @@ export const SkillsPage = () => {
 					className="btn-primary"
 					aria-label="complete signup"
 				>
-					Complete signup
+					{voice.register.completeSignup}
 				</button>
 			</div>
 		</OnboardingLayout>

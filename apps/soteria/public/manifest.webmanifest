@@ -1,12 +1,12 @@
 {
-	"name": "Soteria",
-	"short_name": "Soteria",
-	"description": "Community emergency responder network",
+	"name": "Lifeline",
+	"short_name": "Lifeline",
+	"description": "Hong Kong neighbour responders for 999 dispatch",
 	"start_url": "/",
 	"display": "standalone",
 	"orientation": "portrait",
-	"background_color": "#F7F8FA",
-	"theme_color": "#F7F8FA",
+	"background_color": "#0A1018",
+	"theme_color": "#0A1018",
 	"icons": [
 		{
 			"src": "/icon.svg",

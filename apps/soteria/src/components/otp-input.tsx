@@ -91,12 +91,12 @@ export const OtpInput = ({
 					value={digit}
 					disabled={disabled}
 					aria-label={`digit ${index + 1} of ${length}`}
-					className={`h-12 w-10 rounded-xl border-2 bg-white text-center text-xl font-bold text-ink outline-none transition-colors sm:h-14 sm:w-12 ${
+					className={`h-12 w-10 rounded-md border bg-surface text-center text-xl font-bold text-text outline-none transition-colors sm:h-14 sm:w-12 ${
 						error
 							? "border-danger"
 							: digit
-								? "border-brand"
-								: "border-surface focus:border-brand"
+								? "border-secondary"
+								: "border-border focus:border-secondary"
 					}`}
 					onChange={(e) => setDigit(index, e.target.value)}
 					onKeyDown={(e) => handleKeyDown(index, e.key)}

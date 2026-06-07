@@ -3,12 +3,13 @@ export type AvailabilityDuration = "6h" | "1d" | "7d";
 export type AvailabilityOption = {
 	duration: AvailabilityDuration;
 	label: string;
+	ariaLabel: string;
 };
 
 export const AVAILABILITY_OPTIONS: AvailabilityOption[] = [
-	{ duration: "6h", label: "6 hours" },
-	{ duration: "1d", label: "1 day" },
-	{ duration: "7d", label: "7 days" },
+	{ duration: "6h", label: "6 hrs", ariaLabel: "6 hours" },
+	{ duration: "1d", label: "1 day", ariaLabel: "1 day" },
+	{ duration: "7d", label: "7 days", ariaLabel: "7 days" },
 ];
 
 const DURATION_MS: Record<AvailabilityDuration, number> = {

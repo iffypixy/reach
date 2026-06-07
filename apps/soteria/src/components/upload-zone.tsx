@@ -25,7 +25,7 @@ export const UploadZone = ({ label, preview, onUpload, onError }: UploadZoneProp
 	const handleFile = async (file: File | undefined) => {
 		if (!file) return;
 		if (!ACCEPTED.includes(file.type)) {
-			onError("only photos are accepted — photograph your certificate");
+			onError("only photos — photograph your certificate");
 			return;
 		}
 		if (file.size > MAX_BYTES) {
@@ -40,34 +40,34 @@ export const UploadZone = ({ label, preview, onUpload, onError }: UploadZoneProp
 	};
 
 	return (
-		<div className="rounded-lg bg-card p-4">
-			<p className="mb-3 text-sm font-medium text-ink">{label}</p>
+		<div>
+			<p className="type-body-strong mb-3">{label}</p>
 			{preview ? (
 				<div className="flex flex-col items-center gap-3">
 					<img
 						src={preview}
 						alt={`${label} preview`}
-						className="h-40 w-full rounded-lg object-cover"
+						className="h-40 w-full rounded-md object-cover"
 					/>
 					<button
 						type="button"
 						onClick={() => inputRef.current?.click()}
-						className="text-sm font-medium text-brand"
+						className="text-sm font-semibold text-secondary"
 						aria-label={`retake photo for ${label}`}
 					>
-						Retake photo
+						Retake
 					</button>
 				</div>
 			) : (
 				<button
 					type="button"
 					onClick={() => inputRef.current?.click()}
-					className="flex min-h-[140px] w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-on-surface/25 bg-white transition-colors hover:border-secondary/50 hover:bg-secondary/5"
+					className="flex min-h-[120px] w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-surface transition-colors hover:border-secondary/35 hover:bg-accent-muted/40"
 					aria-label={`photograph certificate for ${label}`}
 				>
-					<Camera size={28} strokeWidth={1.5} className="text-secondary" aria-hidden />
-					<span className="text-sm font-medium text-on-surface">Photograph certificate</span>
-					<span className="text-xs text-muted">Use your camera — no PDFs or file uploads</span>
+					<Camera size={24} strokeWidth={1.5} className="text-secondary" aria-hidden />
+					<span className="type-body-strong">Photograph certificate</span>
+					<span className="type-caption">Camera only — no PDFs</span>
 				</button>
 			)}
 			<input

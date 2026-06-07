@@ -16,23 +16,23 @@ export const CertCard = ({ type, label, selected, onToggle }: CertCardProps) => 
 		onClick={onToggle}
 		aria-pressed={selected}
 		aria-label={label}
-		className={`flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left transition-all ${
+		className={`flex w-full items-center gap-3 rounded-md border px-4 py-3 text-left transition-colors ${
 			selected
-				? "border-brand bg-brand/5"
-				: "border-transparent bg-card hover:bg-brand/5"
+				? "border-secondary bg-accent-muted"
+				: "border-border bg-surface hover:border-secondary/35"
 		}`}
 	>
 		<span
-			className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-				selected ? "bg-brand text-white" : "bg-input text-brand"
+			className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-sm ${
+				selected ? "bg-secondary text-white" : "bg-elevated text-secondary"
 			}`}
 		>
 			<SkillIcon type={type} size={18} />
 		</span>
-		<span className="flex-1 text-sm font-medium text-ink">{label}</span>
+		<span className="type-body-strong flex-1">{label}</span>
 		<span
-			className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
-				selected ? "border-brand bg-brand text-white" : "border-surface bg-white"
+			className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border transition-colors ${
+				selected ? "border-secondary bg-secondary text-white" : "border-border bg-elevated"
 			}`}
 			aria-hidden="true"
 		>
