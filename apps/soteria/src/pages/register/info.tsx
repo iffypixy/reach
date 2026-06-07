@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { OnboardingLayout } from "~/components/onboarding-layout";
+import { createId } from "~/lib/id";
 import { useSession } from "~/lib/session";
 import type { User } from "~/lib/types";
 import { voice } from "~/lib/voice";
@@ -42,19 +43,23 @@ export const InfoPage = () => {
 		firstName.trim() && lastName.trim() && isValidDateOfBirth(dateOfBirth);
 
 	const createAccount = () => {
-		if (!canSubmit || submitting) return;
+		if (!canSubmit || submitting || !phone) return;
 		setSubmitting(true);
-		const user: User = {
-			id: crypto.randomUUID(),
-			firstName: firstName.trim(),
-			lastName: lastName.trim(),
-			phone,
-			dateOfBirth,
-			createdAt: new Date().toISOString(),
-		};
-		// TODO: POST to /api/register
-		update({ user, signup: null, onboardingComplete: false });
-		navigate("/register/skills");
+		try {
+			const user: User = {
+				id: createId(),
+				firstName: firstName.trim(),
+				lastName: lastName.trim(),
+				phone,
+				dateOfBirth,
+				createdAt: new Date().toISOString(),
+			};
+			// TODO: POST to /api/register
+			update({ user, signup: null, onboardingComplete: false });
+			navigate("/register/skills");
+		} finally {
+			setSubmitting(false);
+		}
 	};
 
 	return (

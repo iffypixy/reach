@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { CertCard } from "~/components/cert-card";
 import { OnboardingLayout } from "~/components/onboarding-layout";
 import { CERTIFICATION_GROUPS } from "~/lib/certifications";
+import { createId } from "~/lib/id";
 import { useSession } from "~/lib/session";
 import type { Certification, CertificationType } from "~/lib/types";
 import { useRequireAuth } from "~/lib/use-require-auth";
@@ -25,7 +26,7 @@ export const SkillsPage = () => {
 
 	const finishSignup = () => {
 		const certifications: Certification[] = selected.map((type) => ({
-			id: crypto.randomUUID(),
+			id: createId(),
 			type,
 			status: "self_reported",
 		}));

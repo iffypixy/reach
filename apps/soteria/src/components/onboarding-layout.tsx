@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { AppChromeFooter } from "~/components/app-layout";
-import { BrandMark } from "~/components/brand-mark";
 
 const SIGNUP_STEPS = 4;
 
@@ -21,11 +20,10 @@ const stepLabels: Record<1 | 2 | 3 | 4, string> = {
 
 export const OnboardingLayout = ({ step, title, subtitle, children }: OnboardingLayoutProps) => (
 	<div className="app-shell">
-		<header className="app-header">
-			<div className="app-container app-header-slot">
-				<BrandMark size="sm" />
+		<main className="app-main">
+			<div className="app-container app-main-slot step-enter">
 				{step && (
-					<div className="mt-5 w-full">
+					<div className="mb-6">
 						<p className="type-label">
 							Step {step} of {SIGNUP_STEPS} · {stepLabels[step]}
 						</p>
@@ -46,11 +44,6 @@ export const OnboardingLayout = ({ step, title, subtitle, children }: Onboarding
 						</div>
 					</div>
 				)}
-			</div>
-		</header>
-
-		<main className="app-main">
-			<div className="app-container app-main-slot step-enter">
 				{(title || subtitle) && (
 					<div className="mb-6">
 						{title && <h1 className="screen-title">{title}</h1>}

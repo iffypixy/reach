@@ -40,10 +40,10 @@ export const VerifyPage = () => {
 
 	if (!phone) return null;
 
-	const handleComplete = (code: string) => {
+	const handleComplete = async (code: string) => {
 		setError(null);
 		setVerifying(true);
-		const res = verifyOtp(phone, code);
+		const res = await verifyOtp(phone, code);
 		setVerifying(false);
 		if (!res.ok) {
 			setError("incorrect code — try again");
@@ -53,11 +53,11 @@ export const VerifyPage = () => {
 		navigate("/register/info");
 	};
 
-	const resend = () => {
+	const resend = async () => {
 		if (resendIn > 0 || resending) return;
 		setError(null);
 		setResending(true);
-		const res = sendOtp(phone);
+		const res = await sendOtp(phone);
 		setResending(false);
 		if (!res.ok) {
 			setError(sendOtpErrorMessage[res.error]);
@@ -117,7 +117,7 @@ export const VerifyPage = () => {
 					Change number
 				</button>
 
-				<p className="type-caption opacity-60">Demo code: 123456</p>
+				<p className="type-caption opacity-60">Check your texts for the 6-digit code</p>
 			</div>
 		</OnboardingLayout>
 	);

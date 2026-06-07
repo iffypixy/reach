@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { createContext, createElement, useCallback, useContext, useState, type ReactNode } from "react";
 
 import {
 	availabilityUntil,
@@ -6,6 +6,7 @@ import {
 	isAvailable,
 	type AvailabilityDuration,
 } from "~/lib/availability";
+import { createId } from "~/lib/id";
 import type { Certification, CertificationType, User } from "~/lib/types";
 
 const STORAGE_KEY = "soteria-session";
@@ -50,6 +51,20 @@ const initialSession = (): SessionData => ({
 	availableSince: null,
 	availabilityDuration: null,
 });
+
+const readStored = () => {
+	try {
+		const local = localStorage.getItem(STORAGE_KEY);
+		if (local) return local;
+		const legacy = sessionStorage.getItem(STORAGE_KEY);
+		if (!legacy) return null;
+		localStorage.setItem(STORAGE_KEY, legacy);
+		sessionStorage.removeItem(STORAGE_KEY);
+		return legacy;
+	} catch {
+		return null;
+	}
+};
 
 const expireAvailability = (until: string | null | undefined): string | null =>
 	until && isAvailable(until) ? until : null;
@@ -112,7 +127,7 @@ const migrateUser = (raw: unknown): User | null => {
 
 export const loadSession = (): SessionData => {
 	try {
-		const raw = sessionStorage.getItem(STORAGE_KEY);
+		const raw = readStored();
 		if (!raw) return initialSession();
 		const parsed = JSON.parse(raw) as Partial<SessionData> & {
 			pendingFirstName?: string;
@@ -146,10 +161,29 @@ export const loadSession = (): SessionData => {
 };
 
 export const saveSession = (data: SessionData) => {
-	sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+		sessionStorage.removeItem(STORAGE_KEY);
+		return true;
+	} catch {
+		return false;
+	}
 };
 
-export const useSession = () => {
+type SessionContextValue = {
+	session: SessionData;
+	update: (patch: Partial<SessionData>) => void;
+	updateUser: (patch: Partial<User>) => void;
+	setCertifications: (certifications: Certification[]) => void;
+	addCertification: (type: CertificationType) => void;
+	setAvailability: (duration: AvailabilityDuration) => void;
+	clearAvailability: () => void;
+	submitCertificationDocument: (certId: string, documentUrl: string) => boolean;
+};
+
+const SessionContext = createContext<SessionContextValue | null>(null);
+
+export const SessionProvider = ({ children }: { children: ReactNode }) => {
 	const [session, setSession] = useState(loadSession);
 
 	const update = useCallback((patch: Partial<SessionData>) => {
@@ -182,7 +216,7 @@ export const useSession = () => {
 			if (prev.certifications.some((c) => c.type === type)) return prev;
 			const certifications = [
 				...prev.certifications,
-				{ id: crypto.randomUUID(), type, status: "self_reported" as const },
+				{ id: createId(), type, status: "self_reported" as const },
 			];
 			const next = { ...prev, certifications };
 			saveSession(next);
@@ -217,6 +251,7 @@ export const useSession = () => {
 	}, []);
 
 	const submitCertificationDocument = useCallback((certId: string, documentUrl: string) => {
+		let saved = false;
 		setSession((prev) => {
 			const certifications = prev.certifications.map((cert) =>
 				cert.id === certId
@@ -229,19 +264,32 @@ export const useSession = () => {
 					: cert,
 			);
 			const next = { ...prev, certifications };
-			saveSession(next);
-			return next;
+			saved = saveSession(next);
+			return saved ? next : prev;
 		});
+		return saved;
 	}, []);
 
-	return {
-		session,
-		update,
-		updateUser,
-		setCertifications,
-		addCertification,
-		setAvailability,
-		clearAvailability,
-		submitCertificationDocument,
-	};
+	return createElement(
+		SessionContext.Provider,
+		{
+			value: {
+				session,
+				update,
+				updateUser,
+				setCertifications,
+				addCertification,
+				setAvailability,
+				clearAvailability,
+				submitCertificationDocument,
+			},
+		},
+		children,
+	);
+};
+
+export const useSession = () => {
+	const ctx = useContext(SessionContext);
+	if (!ctx) throw new Error("useSession must be used within SessionProvider");
+	return ctx;
 };

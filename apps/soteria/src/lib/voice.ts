@@ -4,13 +4,14 @@ export const voice = {
 
 	landing: {
 		headline: "Be there before the sirens.",
-		subtitle: "999 dispatch calls neighbours who can walk to an incident — often faster than traffic.",
-		cta: "Join as a neighbour",
-		consent: "SMS alerts when you're on duty",
+		subtitle:
+			"When there's an emergency nearby, 999 calls volunteers who can get there fast — often before ambulances do.",
+		cta: "Become a volunteer",
+		consent: "You'll be called when on duty and close to an emergency",
 		features: [
 			{
-				title: "Called when nearby",
-				description: "Your phone rings when you're close enough to help.",
+				title: "Called in an emergency",
+				description: "On duty and nearby? 999 rings your phone.",
 			},
 			{
 				title: "Skills 999 can use",
@@ -18,7 +19,7 @@ export const voice = {
 			},
 			{
 				title: "Minutes, not kilometres",
-				description: "In Hong Kong, the nearest neighbour is often the fastest help.",
+				description: "In Hong Kong, the closest volunteer is often the fastest help.",
 			},
 		],
 	},
@@ -36,11 +37,9 @@ export const voice = {
 
 	availability: {
 		offTitle: "Off duty",
-		offHint: "Pick a duration, then tap",
-		confirmTitle: "Go on call?",
-		confirmHint: (duration: string) => `Tap again · ${duration}`,
+		offHint: (duration: string) => `Tap to go on call · ${duration}`,
 		onTitle: "On call for 999",
-		onHint: (remaining: string | null) => remaining ?? "Ready for nearby incidents",
+		onHint: (remaining: string | null) => (remaining ? `${remaining} left on call` : "You're on call"),
 	},
 
 	register: {

@@ -34,7 +34,7 @@ const saveRateStore = (store: OtpRateStore) => {
 const prune = (entries: OtpRateEntry[]) =>
 	entries.filter((e) => Date.now() - e.at < RATE_WINDOW_MS);
 
-const normalizePhone = (phone: string) => phone.replace(/[\s()-]/g, "");
+export const normalizePhone = (phone: string) => phone.replace(/[\s()-]/g, "");
 
 export const isValidPhone = (phone: string) => {
 	const digits = normalizePhone(phone).replace(/\D/g, "");
@@ -51,13 +51,34 @@ const isDisposableNumber = (phone: string) => {
 	return DISPOSABLE_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 };
 
-export type SendOtpError = "rate_limited" | "voip_blocked" | "disposable_blocked" | "invalid_phone";
+type ApiError = "invalid_phone" | "sms_failed" | "sms_not_configured";
+
+const postJson = async <T>(path: string, body: unknown): Promise<T | null> => {
+	try {
+		const res = await fetch(path, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		return (await res.json()) as T;
+	} catch {
+		return null;
+	}
+};
+
+export type SendOtpError =
+	| "rate_limited"
+	| "voip_blocked"
+	| "disposable_blocked"
+	| "invalid_phone"
+	| "sms_failed"
+	| "sms_not_configured";
 
 export type SendOtpResult =
 	| { ok: true }
 	| { ok: false; error: SendOtpError };
 
-export const sendOtp = (phone: string): SendOtpResult => {
+export const sendOtp = async (phone: string): Promise<SendOtpResult> => {
 	if (!isValidPhone(phone)) return { ok: false, error: "invalid_phone" };
 	if (isVoipNumber(phone)) return { ok: false, error: "voip_blocked" };
 	if (isDisposableNumber(phone)) return { ok: false, error: "disposable_blocked" };
@@ -73,6 +94,15 @@ export const sendOtp = (phone: string): SendOtpResult => {
 		return { ok: false, error: "rate_limited" };
 	if (store.byClient.length >= MAX_OTP_PER_CLIENT) return { ok: false, error: "rate_limited" };
 
+	const res = await postJson<{ ok: boolean; error?: ApiError }>("/api/otp/send", {
+		phone: normalized,
+	});
+	if (!res?.ok) {
+		if (res?.error === "sms_not_configured")
+			return { ok: false, error: "sms_not_configured" };
+		return { ok: false, error: "sms_failed" };
+	}
+
 	const entry = { phone: normalized, at: now };
 	store.byPhone[normalized].push(entry);
 	store.byClient.push(entry);
@@ -85,8 +115,14 @@ export type VerifyOtpError = "invalid_code";
 
 export type VerifyOtpResult = { ok: true } | { ok: false; error: VerifyOtpError };
 
-export const verifyOtp = (_phone: string, code: string): VerifyOtpResult => {
+export const verifyOtp = async (phone: string, code: string): Promise<VerifyOtpResult> => {
 	if (code === DEMO_OTP) return { ok: true };
+
+	const res = await postJson<{ ok: boolean }>("/api/otp/verify", {
+		phone: normalizePhone(phone),
+		code: code.trim(),
+	});
+	if (res?.ok) return { ok: true };
 	return { ok: false, error: "invalid_code" };
 };
 
@@ -95,4 +131,6 @@ export const sendOtpErrorMessage: Record<SendOtpError, string> = {
 	rate_limited: "too many attempts — try again later",
 	voip_blocked: "voip numbers aren't supported — use a mobile number",
 	disposable_blocked: "this number can't be used — try a different one",
+	sms_failed: "couldn't send code — check the number and try again",
+	sms_not_configured: "sms isn't set up — run npm run dev with the api server",
 };

@@ -10,10 +10,10 @@ import {
 	PROGRESS_RING_RADIUS,
 	type AvailabilityDuration,
 } from "~/lib/availability";
+import { hapticConfirm, hapticTap } from "~/lib/haptics";
 import { voice } from "~/lib/voice";
 
 const DEFAULT_DURATION: AvailabilityDuration = "6h";
-const CONFIRM_ENABLE_MS = 4000;
 
 type AvailabilityToggleProps = {
 	availableUntil: string | null;
@@ -32,7 +32,6 @@ type StatusCopy = {
 
 const statusCopy = (
 	active: boolean,
-	confirming: boolean,
 	pendingLabel: string,
 	remaining: string | null,
 ): StatusCopy => {
@@ -41,20 +40,12 @@ const statusCopy = (
 			title: voice.availability.onTitle,
 			hint: voice.availability.onHint(remaining),
 			titleClass: "text-success",
-			live: remaining ? `On call, ${remaining}` : voice.availability.onTitle,
-		};
-	}
-	if (confirming) {
-		return {
-			title: voice.availability.confirmTitle,
-			hint: voice.availability.confirmHint(pendingLabel),
-			titleClass: "text-secondary",
-			live: `Confirm going on call for ${pendingLabel}`,
+			live: voice.availability.onTitle,
 		};
 	}
 	return {
 		title: voice.availability.offTitle,
-		hint: voice.availability.offHint,
+		hint: voice.availability.offHint(pendingLabel),
 		titleClass: "text-text",
 		live: voice.availability.offTitle,
 	};
@@ -71,20 +62,12 @@ export const AvailabilityToggle = ({
 	const [pendingDuration, setPendingDuration] = useState<AvailabilityDuration>(
 		selectedDuration ?? DEFAULT_DURATION,
 	);
-	const [confirmEnable, setConfirmEnable] = useState(false);
 	const [, setTick] = useState(0);
 
 	useEffect(() => {
 		if (active) return;
 		setPendingDuration(selectedDuration ?? DEFAULT_DURATION);
-		setConfirmEnable(false);
 	}, [active, selectedDuration]);
-
-	useEffect(() => {
-		if (!confirmEnable) return;
-		const timer = setTimeout(() => setConfirmEnable(false), CONFIRM_ENABLE_MS);
-		return () => clearTimeout(timer);
-	}, [confirmEnable]);
 
 	useEffect(() => {
 		if (!active || !availableUntil) return;
@@ -97,24 +80,23 @@ export const AvailabilityToggle = ({
 
 	const handleMainButton = () => {
 		if (active) {
+			hapticTap();
 			onDisable();
 			return;
 		}
-		if (!confirmEnable) {
-			setConfirmEnable(true);
-			return;
-		}
-		setConfirmEnable(false);
+		hapticTap();
+		hapticConfirm();
 		onEnable(pendingDuration);
 	};
 
 	const handleDuration = (duration: AvailabilityDuration) => {
 		if (active) {
+			hapticTap();
 			onEnable(duration);
 			return;
 		}
+		hapticTap();
 		setPendingDuration(duration);
-		setConfirmEnable(true);
 	};
 
 	const remaining = active && availableUntil ? formatRemaining(availableUntil) : null;
@@ -123,8 +105,7 @@ export const AvailabilityToggle = ({
 			? availabilityProgress(availableSince, availableUntil)
 			: 0;
 	const progressOffset = PROGRESS_RING_CIRCUMFERENCE * (1 - progress);
-	const confirming = confirmEnable && !active;
-	const status = statusCopy(active, confirming, pendingLabel, remaining);
+	const status = statusCopy(active, pendingLabel, remaining);
 
 	return (
 		<div className="availability-card">
@@ -138,36 +119,27 @@ export const AvailabilityToggle = ({
 			</div>
 
 			<div className="availability-hero-wrap">
-				<svg
-					className={`availability-progress ${active && availableSince ? "" : "invisible"}`}
-					viewBox="0 0 100 100"
-					aria-hidden="true"
-				>
-					<circle cx="50" cy="50" r={PROGRESS_RING_RADIUS} className="availability-progress-track" />
-					<circle
-						cx="50"
-						cy="50"
-						r={PROGRESS_RING_RADIUS}
-						className="availability-progress-fill"
-						strokeDasharray={PROGRESS_RING_CIRCUMFERENCE}
-						strokeDashoffset={progressOffset}
-					/>
-				</svg>
+				{active && availableSince && (
+					<svg className="availability-progress" viewBox="0 0 100 100" aria-hidden="true">
+						<circle
+							cx="50"
+							cy="50"
+							r={PROGRESS_RING_RADIUS}
+							className="availability-progress-fill"
+							strokeDasharray={PROGRESS_RING_CIRCUMFERENCE}
+							strokeDashoffset={progressOffset}
+						/>
+					</svg>
+				)}
 				<button
 					type="button"
 					onClick={handleMainButton}
 					aria-pressed={active}
-					aria-label={
-						active
-							? "go off duty"
-							: confirming
-								? `confirm go on call for ${pendingLabel}`
-								: `go on call for ${pendingLabel}`
-					}
-					className={`availability-hero ${active ? "availability-hero-active" : ""} ${confirming ? "availability-hero-confirm" : ""}`}
+					aria-label={active ? "go off duty" : `go on call for ${pendingLabel}`}
+					className={`availability-hero ${active ? "availability-hero-active" : ""}`}
 				>
 					<span
-						className={`availability-hero-knob ${active ? "availability-hero-knob-active" : ""} ${confirming ? "availability-hero-knob-confirm" : ""}`}
+						className={`availability-hero-knob ${active ? "availability-hero-knob-active" : ""}`}
 					>
 						{active ? (
 							<Radio size={28} strokeWidth={1.75} aria-hidden />

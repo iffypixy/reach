@@ -38,13 +38,13 @@ export const ProfilePage = () => {
 	};
 
 	return (
-		<AppLayout brandSize="sm">
+		<AppLayout>
 			{toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
 			<div className="profile-page">
 				<div className="profile-intro">
 					<h1 className="profile-greeting">{voice.profile.greeting(session.user.firstName)}</h1>
-					<p className="type-caption">{voice.profile.greetingHint}</p>
+					<p className="profile-greeting-hint">{voice.profile.greetingHint}</p>
 				</div>
 
 				<AvailabilityToggle
@@ -103,10 +103,9 @@ export const ProfilePage = () => {
 												<UploadZone
 													label={voice.profile.verifyPrompt}
 													preview={null}
-													onUpload={(dataUrl) => {
-														// TODO: POST to /api/certifications/:id/document
-														submitCertificationDocument(cert.id, dataUrl);
-													}}
+													onUpload={(dataUrl) =>
+														submitCertificationDocument(cert.id, dataUrl)
+													}
 													onError={setToast}
 												/>
 											)}

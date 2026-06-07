@@ -1,7 +1,7 @@
 {
 	"name": "Lifeline",
 	"short_name": "Lifeline",
-	"description": "Hong Kong neighbour responders for 999 dispatch",
+	"description": "Volunteer with 999 emergency dispatch in Hong Kong",
 	"start_url": "/",
 	"display": "standalone",
 	"orientation": "portrait",
@@ -12,6 +12,18 @@
 			"src": "/icon.svg",
 			"sizes": "any",
 			"type": "image/svg+xml",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
 			"purpose": "any maskable"
 		}
 	]

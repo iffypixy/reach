@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { AppChromeFooter } from "~/components/app-layout";
-import { BrandMark } from "~/components/brand-mark";
 import { useSession } from "~/lib/session";
 import { voice } from "~/lib/voice";
 
@@ -14,21 +13,18 @@ export const LandingPage = () => {
 	const { session } = useSession();
 
 	useEffect(() => {
-		if (!session.user) return;
-		if (session.onboardingComplete) navigate("/profile", { replace: true });
-		else navigate("/register/skills", { replace: true });
-	}, [session.user, session.onboardingComplete, navigate]);
+		if (session.user) {
+			navigate(session.onboardingComplete ? "/profile" : "/register/skills", { replace: true });
+			return;
+		}
+		if (!session.signup?.phone) return;
+		navigate(session.signup.phoneVerified ? "/register/info" : "/register/verify", { replace: true });
+	}, [session.user, session.onboardingComplete, session.signup, navigate]);
 
-	if (session.user) return null;
+	if (session.user || session.signup?.phone) return null;
 
 	return (
 		<div className="app-shell app-shell-hero">
-			<header className="app-header app-header-hero">
-				<div className="app-container app-header-slot">
-					<BrandMark size="lg" inverted />
-				</div>
-			</header>
-
 			<main className="app-main">
 				<div className="app-container app-main-slot app-main-slot-hero">
 					<div className="step-enter">
@@ -61,7 +57,7 @@ export const LandingPage = () => {
 						type="button"
 						onClick={() => navigate("/register")}
 						className="btn-primary"
-						aria-label="join as a neighbour"
+						aria-label="become a volunteer"
 					>
 						{voice.landing.cta}
 					</button>

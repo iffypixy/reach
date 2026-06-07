@@ -26,14 +26,14 @@ export const RegisterPage = () => {
 
 	if (session.user) return null;
 
-	const continueSignup = () => {
+	const continueSignup = async () => {
 		setError(null);
 		if (!isValidPhone(phone)) {
 			setError(sendOtpErrorMessage.invalid_phone);
 			return;
 		}
 		setLoading(true);
-		const res = sendOtp(phone);
+		const res = await sendOtp(phone);
 		setLoading(false);
 		if (!res.ok) {
 			setError(sendOtpErrorMessage[res.error]);
