@@ -18,3 +18,15 @@ In all work, be extremely thorough and ensure 100% correctness. Always verify yo
 - `unknown` over `any` in TypeScript: force type narrowing before use.
 - Prefer `Record` lookups over `switch` for simple mappings. Bad: `switch (status) { case 'active': return 'Online'; ... }` Good: `const labels: Record<Status, string> = { active: 'Online', ... }; return labels[status];`
 - Colocate by default: don't extract into separate files until there's a concrete reason (reuse, complexity). Don't pre-split.
+
+# Definition
+
+Soteria is a 999/911 dispatch dashboard that helps operators get help to emergencies faster by calling nearby trained
+  volunteers (“allies”) who can arrive before official emergency services.
+
+  For each incident, the app shows a map of the scene, ranks allies who are skilled for that emergency and can get there sooner
+   than ambulances/police/fire, and lets the operator call them in order. It also tracks how far real emergency units are, so
+  the operator always sees both community responders and professional services in one view.
+
+  In short: it’s a dispatch tool that bridges community first response and official emergency services — only surfacing cases
+  where a volunteer can genuinely beat the units on time.
