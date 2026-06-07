@@ -1285,9 +1285,7 @@ type MapPopupAnchor =
 	| "bottom-left"
 	| "bottom-right";
 
-const POPUP_W = 220;
-const POPUP_H = 320;
-const POPUP_PIN_GAP = 10;
+const POPUP_GAP = 140;
 
 const allyPopupPlacement = (
 	allyCoords: [number, number],
@@ -1297,19 +1295,22 @@ const allyPopupPlacement = (
 	const dy = incidentCoords[1] - allyCoords[1];
 	const dist = Math.hypot(dx, dy);
 
-	if (dist < 1e-9) return { anchor: "center", offset: [POPUP_W / 2 + POPUP_PIN_GAP, 0] };
+	if (dist < 1e-9) return { anchor: "left", offset: [POPUP_GAP, 0] };
 
 	const px = -dx / dist;
 	const py = dy / dist;
-	const proximityBoost = dist < 0.008 ? 56 : dist < 0.015 ? 32 : dist < 0.025 ? 16 : 0;
-	const edgeGap = POPUP_PIN_GAP + proximityBoost;
-	const halfExtent = Math.abs(px) * (POPUP_W / 2) + Math.abs(py) * (POPUP_H / 2);
-	const total = edgeGap + halfExtent;
 
-	return {
-		anchor: "center",
-		offset: [Math.round(px * total), Math.round(py * total)],
-	};
+	if (Math.abs(px) >= Math.abs(py)) {
+		const xOff = px > 0 ? POPUP_GAP : -POPUP_GAP;
+		return px > 0
+			? { anchor: "left", offset: [xOff, 0] }
+			: { anchor: "right", offset: [xOff, 0] };
+	}
+
+	const yOff = py > 0 ? POPUP_GAP : -POPUP_GAP;
+	return py > 0
+		? { anchor: "top", offset: [0, yOff] }
+		: { anchor: "bottom", offset: [0, yOff] };
 };
 
 const AllyMapPopup = ({
