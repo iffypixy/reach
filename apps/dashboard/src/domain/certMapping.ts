@@ -25,6 +25,13 @@ export const INCIDENT_TYPE_CERT_WEIGHTS: Record<
 	childbirth: { medical_professional: 1.0, cpr_aed: 0.4 },
 	"mental-health-crisis": { mental_health_first_aid: 1.0, medical_professional: 0.5, cpr_aed: 0.4 },
 	"language-barrier": { mental_health_first_aid: 0.6, other: 0.5, medical_professional: 0.4 },
+	"building-fire": { fire_safety: 1.0, cpr_aed: 0.4 },
+	"gas-leak": { fire_safety: 1.0, cpr_aed: 0.4 },
+	"vehicle-fire": { fire_safety: 1.0, cpr_aed: 0.4 },
+	assault: { mental_health_first_aid: 0.8, cpr_aed: 0.5 },
+	robbery: { mental_health_first_aid: 0.8, cpr_aed: 0.5 },
+	"traffic-accident": { road_accident_response: 1.0, medical_professional: 0.7, cpr_aed: 0.6 },
+	"suicide-attempt": { mental_health_first_aid: 1.0, medical_professional: 0.8, cpr_aed: 0.6, fire_safety: 0.4 },
 };
 
 export const getMatchedCerts = (

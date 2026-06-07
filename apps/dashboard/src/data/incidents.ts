@@ -20,7 +20,6 @@ const SEED_TEMPLATES: SeedIncident[] = [
 		callerPhone: "+852 9123 4567",
 		emergencyServices: [
 			{ id: "svc-001a", type: "ambulance", callsign: "AMB-09", coords: [114.1553, 22.2819], etaMinutes: 7, dispatchAgeMs: 45_000 },
-			{ id: "svc-001b", type: "police", callsign: "BRAVO-3", coords: [114.1583, 22.2776], etaMinutes: 5, dispatchAgeMs: 45_000 },
 		],
 		allyStatuses: {},
 		handled: false,
@@ -53,7 +52,6 @@ const SEED_TEMPLATES: SeedIncident[] = [
 		callerPhone: "+852 9234 5678",
 		emergencyServices: [
 			{ id: "svc-003a", type: "ambulance", callsign: "AMB-14", coords: [114.1741, 22.3099], etaMinutes: 5, dispatchAgeMs: 185_000 },
-			{ id: "svc-003b", type: "police", callsign: "ALPHA-7", coords: [114.1621, 22.3156], etaMinutes: 5, dispatchAgeMs: 185_000 },
 		],
 		allyStatuses: {},
 		handled: false,
@@ -69,7 +67,6 @@ const SEED_TEMPLATES: SeedIncident[] = [
 		callerPhone: "+852 9345 6789",
 		emergencyServices: [
 			{ id: "svc-004a", type: "ambulance", callsign: "AMB-22", coords: [114.1673, 22.2783], etaMinutes: 6, dispatchAgeMs: 360_000 },
-			{ id: "svc-004b", type: "police", callsign: "ECHO-3", coords: [114.1826, 22.2756], etaMinutes: 5, dispatchAgeMs: 360_000 },
 		],
 		allyStatuses: {},
 		handled: false,
@@ -85,7 +82,6 @@ const SEED_TEMPLATES: SeedIncident[] = [
 		callerPhone: "+852 9567 8901",
 		emergencyServices: [
 			{ id: "svc-005a", type: "ambulance", callsign: "AMB-17", coords: [114.1729, 22.2810], etaMinutes: 5, dispatchAgeMs: 130_000 },
-			{ id: "svc-005b", type: "police", callsign: "DELTA-4", coords: [114.1783, 22.2838], etaMinutes: 5, dispatchAgeMs: 130_000 },
 		],
 		allyStatuses: {},
 		handled: false,
@@ -101,7 +97,6 @@ const SEED_TEMPLATES: SeedIncident[] = [
 		callerPhone: "+852 9678 9012",
 		emergencyServices: [
 			{ id: "svc-006a", type: "ambulance", callsign: "AMB-03", coords: [114.1652, 22.3045], etaMinutes: 5, dispatchAgeMs: 18_000 },
-			{ id: "svc-006b", type: "police", callsign: "CHARLIE-5", coords: [114.1680, 22.2990], etaMinutes: 5, dispatchAgeMs: 18_000 },
 		],
 		allyStatuses: {},
 		handled: false,
@@ -117,7 +112,6 @@ const SEED_TEMPLATES: SeedIncident[] = [
 		callerPhone: "+852 9789 0123",
 		emergencyServices: [
 			{ id: "svc-007a", type: "ambulance", callsign: "AMB-18", coords: [114.1863, 22.2814], etaMinutes: 5, dispatchAgeMs: 75_000 },
-			{ id: "svc-007b", type: "police", callsign: "ECHO-7", coords: [114.1840, 22.2750], etaMinutes: 5, dispatchAgeMs: 75_000 },
 		],
 		allyStatuses: {},
 		handled: false,
@@ -133,7 +127,6 @@ const SEED_TEMPLATES: SeedIncident[] = [
 		callerPhone: "+852 9890 1234",
 		emergencyServices: [
 			{ id: "svc-008a", type: "ambulance", callsign: "AMB-11", coords: [114.1609, 22.2803], etaMinutes: 5, dispatchAgeMs: 1_080_000 },
-			{ id: "svc-008b", type: "police", callsign: "FOXTROT-2", coords: [114.1583, 22.2776], etaMinutes: 6, dispatchAgeMs: 1_080_000 },
 		],
 		allyStatuses: {},
 		handled: false,

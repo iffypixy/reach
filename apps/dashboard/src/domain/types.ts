@@ -11,7 +11,14 @@ export type IncidentType =
 	| "anaphylaxis"
 	| "childbirth"
 	| "mental-health-crisis"
-	| "language-barrier";
+	| "language-barrier"
+	| "building-fire"
+	| "gas-leak"
+	| "vehicle-fire"
+	| "assault"
+	| "robbery"
+	| "traffic-accident"
+	| "suicide-attempt";
 
 export type IncidentStatus = "incoming" | "active" | "dispatched";
 export type ServiceType = "ambulance" | "police" | "fire-engine";

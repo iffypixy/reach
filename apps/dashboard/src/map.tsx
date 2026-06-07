@@ -135,6 +135,13 @@ const TYPE_COLOR: Record<IncidentType, string> = {
 	"childbirth":           "#BE185D",
 	"mental-health-crisis": "#4338CA",
 	"language-barrier":     "#475569",
+	"building-fire":        "#DC2626",
+	"gas-leak":             "#B45309",
+	"vehicle-fire":         "#EA580C",
+	assault:                "#1D4ED8",
+	robbery:                "#1E3A8A",
+	"traffic-accident":     "#CA8A04",
+	"suicide-attempt":      "#6366F1",
 };
 
 const TYPE_CODE: Record<IncidentType, string> = {
@@ -151,6 +158,13 @@ const TYPE_CODE: Record<IncidentType, string> = {
 	"childbirth":           "CB",
 	"mental-health-crisis": "MH",
 	"language-barrier":     "LB",
+	"building-fire":        "BF",
+	"gas-leak":             "GL",
+	"vehicle-fire":         "VF",
+	assault:                "AS",
+	robbery:                "RB",
+	"traffic-accident":     "TA",
+	"suicide-attempt":      "SA",
 };
 
 const STATUS_COLOR: Record<IncidentStatus, string> = {
@@ -1266,7 +1280,9 @@ type MapPopupAnchor =
 	| "bottom-left"
 	| "bottom-right";
 
-const PIN_CLEARANCE = 32;
+const POPUP_W = 220;
+const POPUP_H = 320;
+const POPUP_PIN_GAP = 10;
 
 const allyPopupPlacement = (
 	allyCoords: [number, number],
@@ -1274,25 +1290,21 @@ const allyPopupPlacement = (
 ): { anchor: MapPopupAnchor; offset: [number, number] } => {
 	const dx = incidentCoords[0] - allyCoords[0];
 	const dy = incidentCoords[1] - allyCoords[1];
+	const dist = Math.hypot(dx, dy);
 
-	if (Math.hypot(dx, dy) < 1e-9) return { anchor: "bottom", offset: [0, -PIN_CLEARANCE] };
+	if (dist < 1e-9) return { anchor: "center", offset: [POPUP_W / 2 + POPUP_PIN_GAP, 0] };
 
-	const ax = Math.abs(dx);
-	const ay = Math.abs(dy);
+	const px = -dx / dist;
+	const py = dy / dist;
+	const proximityBoost = dist < 0.008 ? 56 : dist < 0.015 ? 32 : dist < 0.025 ? 16 : 0;
+	const edgeGap = POPUP_PIN_GAP + proximityBoost;
+	const halfExtent = Math.abs(px) * (POPUP_W / 2) + Math.abs(py) * (POPUP_H / 2);
+	const total = edgeGap + halfExtent;
 
-	if (ax > ay * 1.4) {
-		if (dx > 0) return { anchor: "right", offset: [-PIN_CLEARANCE, 0] };
-		return { anchor: "left", offset: [PIN_CLEARANCE, 0] };
-	}
-	if (ay > ax * 1.4) {
-		if (dy > 0) return { anchor: "top", offset: [0, PIN_CLEARANCE] };
-		return { anchor: "bottom", offset: [0, -PIN_CLEARANCE] };
-	}
-
-	if (dx > 0 && dy > 0) return { anchor: "top-right", offset: [PIN_CLEARANCE, -PIN_CLEARANCE] };
-	if (dx < 0 && dy > 0) return { anchor: "top-left", offset: [-PIN_CLEARANCE, -PIN_CLEARANCE] };
-	if (dx > 0 && dy < 0) return { anchor: "bottom-right", offset: [PIN_CLEARANCE, PIN_CLEARANCE] };
-	return { anchor: "bottom-left", offset: [-PIN_CLEARANCE, PIN_CLEARANCE] };
+	return {
+		anchor: "center",
+		offset: [Math.round(px * total), Math.round(py * total)],
+	};
 };
 
 const AllyMapPopup = ({
@@ -1897,6 +1909,30 @@ export const SoteriaMap = () => {
 			essential: true,
 		});
 	}, [selectedId]);
+
+	useEffect(() => {
+		if (!selectedIncident || !activeAllyId) return;
+		const ally = rankedAllies.find((r) => r.ally.id === activeAllyId)?.ally;
+		if (!ally) return;
+		const map = mapRef.current?.getMap();
+		if (!map) return;
+
+		const [incLng, incLat] = selectedIncident.coords;
+		const [allyLng, allyLat] = ally.coords;
+		map.fitBounds(
+			[
+				[Math.min(incLng, allyLng), Math.min(incLat, allyLat)],
+				[Math.max(incLng, allyLng), Math.max(incLat, allyLat)],
+			],
+			{
+				padding: { top: 100, bottom: 60, left: 60, right: 380 },
+				duration: 650,
+				pitch: 52,
+				bearing: -12,
+				maxZoom: 14.5,
+			},
+		);
+	}, [activeAllyId, selectedIncident, rankedAllies]);
 
 	const handleSelect = (id: string) => setSelectedId((prev) => (prev === id ? null : id));
 

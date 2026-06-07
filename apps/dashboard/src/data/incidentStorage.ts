@@ -1,7 +1,14 @@
+import { INCIDENT_SERVICES } from "~/domain/incidentServices";
 import type { AllyResponseStatus, Incident } from "~/domain/types";
 import { sanitizeTupleToLand } from "~/lib/geo";
 
 const STORAGE_KEY = "soteria-incidents";
+
+const incidentDisplayId = (id: string) => id.replace(/-/g, "").slice(-4).toUpperCase();
+
+const REMOVED_INCIDENT_DISPLAY_IDS = new Set(["E542"]);
+
+const isRemovedIncident = (id: string) => REMOVED_INCIDENT_DISPLAY_IDS.has(incidentDisplayId(id));
 
 type PersistedIncident = Incident & { contactedAllyIds?: string[] };
 
@@ -21,10 +28,12 @@ const migrateAllyStatuses = (inc: PersistedIncident): Partial<Record<string, All
 const normalize = (inc: PersistedIncident): Incident => ({
 	...inc,
 	coords: sanitizeTupleToLand(inc.coords),
-	emergencyServices: inc.emergencyServices.map((svc) => ({
-		...svc,
-		coords: sanitizeTupleToLand(svc.coords),
-	})),
+	emergencyServices: inc.emergencyServices
+		.filter((svc) => INCIDENT_SERVICES[inc.type].includes(svc.type))
+		.map((svc) => ({
+			...svc,
+			coords: sanitizeTupleToLand(svc.coords),
+		})),
 	allyStatuses: migrateAllyStatuses(inc),
 	handled: inc.handled ?? false,
 	source: inc.source ?? "operator",
@@ -36,7 +45,9 @@ export const loadPersistedState = (): PersistedState => {
 		if (!raw) return { operatorIncidents: [], overrides: {} };
 		const parsed = JSON.parse(raw) as PersistedState;
 		return {
-			operatorIncidents: (parsed.operatorIncidents ?? []).map(normalize),
+			operatorIncidents: (parsed.operatorIncidents ?? [])
+				.map(normalize)
+				.filter((inc) => !isRemovedIncident(inc.id)),
 			overrides: parsed.overrides ?? {},
 		};
 	} catch {
@@ -45,9 +56,12 @@ export const loadPersistedState = (): PersistedState => {
 };
 
 export const savePersistedState = (incidents: Incident[]) => {
-	const operatorIncidents = incidents.filter((i) => i.source === "operator").map(normalize);
+	const operatorIncidents = incidents
+		.filter((i) => i.source === "operator" && !isRemovedIncident(i.id))
+		.map(normalize);
 	const overrides: PersistedState["overrides"] = {};
 	for (const inc of incidents) {
+		if (isRemovedIncident(inc.id)) continue;
 		if (Object.keys(inc.allyStatuses).length > 0 || inc.handled)
 			overrides[inc.id] = {
 				allyStatuses: inc.allyStatuses,
@@ -66,5 +80,5 @@ export const mergeIncidents = (seed: Incident[], persisted: PersistedState): Inc
 		}),
 		...persisted.operatorIncidents,
 	];
-	return merged;
+	return merged.filter((inc) => !isRemovedIncident(inc.id));
 };

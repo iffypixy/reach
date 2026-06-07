@@ -15,9 +15,17 @@ export const CERT_TO_SKILLS: Record<CertificationType, IncidentType[]> = {
 	],
 	water_rescue: ["drowning"],
 	mountain_wilderness_rescue: ["severe-bleeding", "drowning"],
-	fire_safety: ["severe-bleeding"],
-	road_accident_response: ["severe-bleeding", "cardiac-arrest"],
-	mental_health_first_aid: ["mental-health-crisis", "overdose", "language-barrier", "seizure"],
+	fire_safety: ["severe-bleeding", "building-fire", "gas-leak", "vehicle-fire", "suicide-attempt"],
+	road_accident_response: ["severe-bleeding", "cardiac-arrest", "traffic-accident"],
+	mental_health_first_aid: [
+		"mental-health-crisis",
+		"overdose",
+		"language-barrier",
+		"seizure",
+		"assault",
+		"robbery",
+		"suicide-attempt",
+	],
 	other: ["language-barrier"],
 };
 
