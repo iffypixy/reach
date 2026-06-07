@@ -1,3 +1,3 @@
-import { SoteriaMap } from "~/map";
+import { LifelineMap } from "~/map";
 
-export const App = () => <SoteriaMap />;
+export const App = () => <LifelineMap />;

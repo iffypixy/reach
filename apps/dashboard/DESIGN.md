@@ -1,4 +1,4 @@
-# Soteria — Design System Spec
+# Lifeline — Design System Spec
 
 **Version:** 1.0  
 **Product:** 999/911 emergency dispatch dashboard for coordinating community allies and emergency services around active incidents.
@@ -36,7 +36,7 @@ A full-screen dark map with three UI layers floating above it:
 - The **map is the stage**; all chrome floats above it in frosted glass panels.
 - Panels are **inset 12px** from viewport edges so the map remains visible in the margins.
 - Visual depth comes from **blur, hairline borders, and restrained shadows** — not gradients, glow halos, or heavy decoration.
-- **Incident type color** appears only as thin accent: left border, header wash, map marker fill.
+- **Incident victims** are always red (`#EC0016`); type is shown as text only, never as color.
 
 ### Z-index stack
 
@@ -170,29 +170,24 @@ Approved combinations: `10` (sm+2), `11` (sm+3), `12` (sm+4 or md−4).
 | Police | `#60A5FA` |
 | Fire engine | `#F97316` |
 
-### Incident type accent colors
+### Incident victim color (all types)
 
-Use for queue left border, map marker, header glow — **never** as large background fills.
+Incidents are **never** color-coded by type. Every victim uses the same red:
 
-| Incident type | Color | Clinical priority |
-|---------------|-------|-------------------|
-| Cardiac arrest | `#EF4444` | 1 (highest) |
-| Choking | `#EA580C` | 1 |
-| Anaphylaxis | `#BE123C` | 1 |
-| Severe bleeding | `#DC2626` | 1 |
-| Stroke | `#7C3AED` | 2 |
-| Breathing difficulty | `#F97316` | 2 |
-| Seizure | `#9333EA` | 2 |
-| Overdose / poisoning | `#0891B2` | 2 |
-| Diabetic emergency | `#D97706` | 3 |
-| Childbirth emergency | `#BE185D` | 3 |
-| Mental health crisis | `#4338CA` | 3 |
+| Token | Value | Use |
+|-------|-------|-----|
+| Victim fill | `#EC0016` | Map marker, queue left border, detail header border |
+| Victim border | `rgba(255, 100, 110, 0.9)` | Map marker ring |
+| Victim selected ring | `rgba(255, 160, 165, 1)` | Map marker when selected |
+| Header glow | `#EC001622` | Detail panel ambient wash |
+
+Incident **type** is communicated by label text only (queue, header). Clinical priority still affects queue order and pulse speed, not color.
 
 **Urgent meta chip** (waiting time) when priority ≤ 2:
 - Background: `rgba(236, 0, 22, 0.12)`
 - Border: `rgba(236, 0, 22, 0.28)`
 
-**Header glow variable:** `--incident-glow: {typeColor}22` (hex + 22 alpha ≈ 13% opacity).
+**Header glow variable:** `--incident-glow: #EC001622`.
 
 ---
 
@@ -374,7 +369,7 @@ transition: 0.15s ease
 ### 9.1 Queue panel (left)
 
 **Header** (padding 16px, bottom border `borderPanel`):
-- Row: Title "Soteria" (title style) + live dot (6px green, pulsing)
+- Row: Title "Lifeline" (title style) + live dot (6px green, pulsing)
 - Subtitle: `"{n} in queue · most urgent first"` (caption)
 
 **List** (padding `6px 8px 8px`, scrollable):
@@ -385,7 +380,7 @@ transition: 0.15s ease
 ```
 padding: 11px 12px
 border-radius: 6px
-border-left: 3px solid [type color] when selected OR priority #1, else transparent
+border-left: 3px solid #EC0016 when selected, else transparent
 background: transparent (hover: rgba(255,255,255,0.04))
 selected: background rgba(26,30,38,0.92) + inset ring shadow
 
@@ -405,8 +400,8 @@ No red dot. No red background for priority.
 
 #### Incident header
 
-Class: `soteria-incident-header`  
-Inline: `border-left: 3px solid [type color]`, `--incident-glow: [type color]22`, padding 16px.
+Class: `lifeline-incident-header`  
+Inline: `border-left: 3px solid #EC0016`, `--incident-glow: #EC001622`, padding 16px.
 
 Content (position relative, above glow):
 - Headline: incident type name
@@ -497,12 +492,13 @@ Same elevated card as hero (padding 16px, max-width 380px).
 
 ### 9.6 Map markers
 
-**Incident**
-- Circle, type color, 48px (52px when selected)
-- White user icon 22px
-- Border `2px solid rgba(255,255,255,0.35)`
+**Incident victim**
+- Circle fill: `#EC0016`
+- Border: `2px solid rgba(255, 100, 110, 0.9)` (red, not white or blue)
+- White user icon 22px (victim/person symbol)
 - Shadow `0 2px 8px rgba(0,0,0,0.35)`
-- Selected outline: `3px solid #5B8DEF`, offset 2px
+- Priority pulse rings: `#EC0016`
+- Selected ring: `3px solid rgba(255, 160, 165, 1)` (light red, not blue)
 
 **Ally**
 - Primary/active: 36px, `#5B8DEF`, double pulse ring 2.4s
@@ -624,7 +620,7 @@ Same elevated card as hero (padding 16px, max-width 380px).
 
 - Use the spacing scale and six type roles only
 - Float panels with 12px inset and glass treatment
-- Use incident type color as thin accent (3px border, marker, glow)
+- Use victim red consistently for all incident accents (never per-type colors)
 - Keep map controls in one toolbar
 - Explain action consequences in caption hints below buttons
 - Let "Can't help" auto-route to next ally or close incident
@@ -642,7 +638,7 @@ Same elevated card as hero (padding 16px, max-width 380px).
 
 ## 14. Complete CSS reference
 
-Copy-paste ready. Class prefix: `soteria-`.
+Copy-paste ready. Class prefix: `lifeline-`.
 
 ```css
 /* ── Base ── */
@@ -677,7 +673,7 @@ html, body, #root {
 }
 
 /* ── Panels ── */
-.soteria-panel {
+.lifeline-panel {
   background: rgba(14, 17, 23, 0.78);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -689,17 +685,17 @@ html, body, #root {
   overflow: hidden;
 }
 
-.soteria-panel-header {
+.lifeline-panel-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* ── Incident header ── */
-.soteria-incident-header {
+.lifeline-incident-header {
   position: relative;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.soteria-incident-header::before {
+.lifeline-incident-header::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -708,11 +704,11 @@ html, body, #root {
 }
 
 /* ── Queue ── */
-.soteria-queue-scroll {
+.lifeline-queue-scroll {
   padding: 6px 8px 8px;
 }
 
-.soteria-queue-item {
+.lifeline-queue-item {
   width: 100%;
   border: none;
   cursor: pointer;
@@ -722,11 +718,11 @@ html, body, #root {
   transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.soteria-queue-item:hover {
+.lifeline-queue-item:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.soteria-queue-item--selected {
+.lifeline-queue-item--selected {
   background: rgba(26, 30, 38, 0.92);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.06),
@@ -734,7 +730,7 @@ html, body, #root {
 }
 
 /* ── Map toolbar ── */
-.soteria-map-toolbar {
+.lifeline-map-toolbar {
   display: flex;
   flex-direction: column;
   width: 236px;
@@ -750,7 +746,7 @@ html, body, #root {
   pointer-events: auto;
 }
 
-.soteria-map-toolbar-btn {
+.lifeline-map-toolbar-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -764,28 +760,28 @@ html, body, #root {
   transition: background 0.15s ease;
 }
 
-.soteria-map-toolbar-btn:hover {
+.lifeline-map-toolbar-btn:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.soteria-map-toolbar-btn[aria-pressed="true"] {
+.lifeline-map-toolbar-btn[aria-pressed="true"] {
   background: rgba(91, 141, 239, 0.12);
 }
 
-.soteria-map-toolbar-divider {
+.lifeline-map-toolbar-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.06);
 }
 
 /* ── Elevation ── */
-.soteria-dock {
+.lifeline-dock {
   box-shadow:
     0 16px 48px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
   border-radius: 8px;
 }
 
-.soteria-elevated-card {
+.lifeline-elevated-card {
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.32),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -793,7 +789,7 @@ html, body, #root {
 }
 
 /* ── Status ── */
-.soteria-live-dot {
+.lifeline-live-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -804,13 +800,13 @@ html, body, #root {
 }
 
 /* ── Map popup wrapper (Mapbox) ── */
-.soteria-popup .mapboxgl-popup-content {
+.lifeline-popup .mapboxgl-popup-content {
   background: transparent;
   padding: 0;
   box-shadow: none;
 }
 
-.soteria-popup .mapboxgl-popup-tip {
+.lifeline-popup .mapboxgl-popup-tip {
   display: none;
 }
 ```

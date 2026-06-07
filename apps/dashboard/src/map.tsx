@@ -429,20 +429,6 @@ const AllyVerifiedBadge = ({ verified }: { verified: boolean }) => (
 
 // ── Labels, icons & colors per type ──────────────────────────────────────────
 
-const TYPE_COLOR: Record<IncidentType, string> = {
-	"cardiac-arrest":       "#EF4444",
-	"breathing-difficulty": "#F97316",
-	"stroke":               "#7C3AED",
-	"severe-bleeding":      "#DC2626",
-	"seizure":              "#9333EA",
-	"overdose":             "#0891B2",
-	"diabetic-emergency":   "#D97706",
-	"choking":              "#EA580C",
-	"anaphylaxis":          "#BE123C",
-	"childbirth":           "#BE185D",
-	"mental-health-crisis": "#4338CA",
-};
-
 const TYPE_LABEL: Record<IncidentType, string> = {
 	"cardiac-arrest":       "Cardiac Arrest",
 	"breathing-difficulty": "Breathing Difficulty",
@@ -508,6 +494,9 @@ const INCIDENT_MARKER_SIZE = 48;
 const INCIDENT_MARKER_SIZE_SELECTED = 52;
 const INCIDENT_ICON_SIZE = 22;
 const INCIDENT_RING_SIZE = 72;
+const INCIDENT_VICTIM_COLOR = Z.primary;
+const INCIDENT_VICTIM_BORDER = "rgba(255, 100, 110, 0.9)";
+const INCIDENT_VICTIM_SELECTED_RING = "rgba(255, 160, 165, 1)";
 
 const SVC_ICON: Record<ServiceType, ReactNode> = {
 	ambulance:     <Cross        size={MAP_ICON_SIZE} color="white" strokeWidth={MAP_ICON_STROKE} />,
@@ -556,21 +545,17 @@ const serviceMapLabel = (svc: EmergencyService, all: EmergencyService[]): string
 	return `${SVC_LABEL[svc.type]} #${peers.findIndex((s) => s.id === svc.id) + 1}`;
 };
 
-const mapIncidentMarkerStyle = (
-	color: string,
-	size: number,
-	selected: boolean,
-): CSSProperties => ({
+const mapIncidentMarkerStyle = (size: number, selected: boolean): CSSProperties => ({
 	display: "flex",
 	alignItems: "center",
 	justifyContent: "center",
 	width: size,
 	height: size,
-	background: color,
+	background: INCIDENT_VICTIM_COLOR,
 	borderRadius: "50%",
-	border: "2px solid rgba(255,255,255,0.35)",
+	border: `2px solid ${INCIDENT_VICTIM_BORDER}`,
 	boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
-	outline: selected ? `3px solid ${Z.secondary}` : "none",
+	outline: selected ? `3px solid ${INCIDENT_VICTIM_SELECTED_RING}` : "none",
 	outlineOffset: 2,
 	cursor: "pointer",
 	fontFamily: Z.font,
@@ -963,29 +948,28 @@ const IncidentSidebar = ({
 	const queue = useMemo(() => sortIncidentsByUrgency(incidents), [incidents]);
 
 	return (
-	<div className="soteria-panel" style={{ ...panelFrame("left"), display: "flex", flexDirection: "column" }}>
-		<div className="soteria-panel-header" style={{ padding: sp.md }}>
+	<div className="lifeline-panel" style={{ ...panelFrame("left"), display: "flex", flexDirection: "column" }}>
+		<div className="lifeline-panel-header" style={{ padding: sp.md }}>
 			<div style={{ display: "flex", alignItems: "center", gap: sp.sm }}>
-				<div style={type.title}>Soteria</div>
-				<span className="soteria-live-dot" title="Live queue" />
+				<div style={type.title}>Lifeline</div>
+				<span className="lifeline-live-dot" title="Live queue" />
 			</div>
 			<div style={{ ...type.caption, marginTop: sp.xs }}>
 				{incidents.length} in queue · most urgent first
 			</div>
 		</div>
 
-		<div className="soteria-queue-scroll" style={{ flex: 1, overflowY: "auto" }}>
+		<div className="lifeline-queue-scroll" style={{ flex: 1, overflowY: "auto" }}>
 			{queue.length === 0 ? (
 				<div style={{ padding: sp.md, ...type.caption, lineHeight: 1.5 }}>
 					Queue empty
 				</div>
 			) : (
-				queue.map((inc, idx) => (
+				queue.map((inc) => (
 					<IncidentCard
 						key={inc.id}
 						incident={inc}
 						selected={inc.id === selectedId}
-						priority={idx === 0}
 						onSelect={() => onSelect(inc.id)}
 					/>
 				))
@@ -1008,23 +992,20 @@ const IncidentSidebar = ({
 const IncidentCard = ({
 	incident,
 	selected,
-	priority,
 	onSelect,
 }: {
 	incident: Incident;
 	selected: boolean;
-	priority: boolean;
 	onSelect: () => void;
 }) => {
-	const typeColor = TYPE_COLOR[incident.type];
 	return (
 		<button
 			type="button"
 			onClick={onSelect}
-			className={`soteria-queue-item${selected ? " soteria-queue-item--selected" : ""}`}
+			className={`lifeline-queue-item${selected ? " lifeline-queue-item--selected" : ""}`}
 			style={{
 				background: selected ? undefined : "transparent",
-				borderLeft: `3px solid ${selected || priority ? typeColor : "transparent"}`,
+				borderLeft: `3px solid ${selected ? INCIDENT_VICTIM_COLOR : "transparent"}`,
 				padding: `${sp.sm + 3}px ${sp.md - 4}px`,
 			}}
 		>
@@ -1055,7 +1036,6 @@ const IncidentMarker = ({
 	selected: boolean;
 	onClick: () => void;
 }) => {
-	const typeColor = TYPE_COLOR[incident.type];
 	const pulseDuration = PRIORITY_PULSE[TYPE_PRIORITY[incident.type]];
 	const showPulse = !!pulseDuration;
 	const markerSize = selected ? INCIDENT_MARKER_SIZE_SELECTED : INCIDENT_MARKER_SIZE;
@@ -1079,7 +1059,7 @@ const IncidentMarker = ({
 								position: "absolute",
 								inset: 0,
 								borderRadius: "50%",
-								border: `2px solid ${typeColor}`,
+								border: `2px solid ${INCIDENT_VICTIM_COLOR}`,
 								animation: `pulseRing ${pulseDuration} cubic-bezier(0.215, 0.61, 0.355, 1) infinite`,
 							}}
 						/>
@@ -1088,7 +1068,7 @@ const IncidentMarker = ({
 								position: "absolute",
 								inset: 0,
 								borderRadius: "50%",
-								border: `2px solid ${typeColor}`,
+								border: `2px solid ${INCIDENT_VICTIM_COLOR}`,
 								animation: `pulseRing ${pulseDuration} cubic-bezier(0.215, 0.61, 0.355, 1) infinite`,
 								animationDelay: `${parseFloat(pulseDuration) * 0.5}s`,
 							}}
@@ -1098,8 +1078,8 @@ const IncidentMarker = ({
 				<button
 					type="button"
 					onClick={onClick}
-					style={mapIncidentMarkerStyle(typeColor, markerSize, selected)}
-					aria-label={`${TYPE_LABEL[incident.type]} incident`}
+					style={mapIncidentMarkerStyle(markerSize, selected)}
+					aria-label={`${TYPE_LABEL[incident.type]} incident victim`}
 				>
 					<UserRound
 						size={INCIDENT_ICON_SIZE}
@@ -1423,7 +1403,7 @@ const MapToolbar = ({
 		: "See how far emergency services are";
 	return (
 		<div
-			className="soteria-map-toolbar"
+			className="lifeline-map-toolbar"
 			style={{
 				position: "absolute",
 				top: LAYOUT.panelInset,
@@ -1433,7 +1413,7 @@ const MapToolbar = ({
 		>
 			<button
 				type="button"
-				className="soteria-map-toolbar-btn"
+				className="lifeline-map-toolbar-btn"
 				onClick={onToggleUnitRoutes}
 				aria-pressed={showUnitRoutes}
 				aria-label={
@@ -1481,10 +1461,10 @@ const MapToolbar = ({
 					/>
 				</span>
 			</button>
-			<div className="soteria-map-toolbar-divider" />
+			<div className="lifeline-map-toolbar-divider" />
 			<button
 				type="button"
-				className="soteria-map-toolbar-btn"
+				className="lifeline-map-toolbar-btn"
 				onClick={onReset}
 				aria-label={
 					allyName
@@ -1534,7 +1514,7 @@ const MapCallCard = ({
 		pointerEvents: "auto",
 		animation: "slideInUp 0.18s ease-out",
 	};
-	const dockClass = "soteria-dock";
+	const dockClass = "lifeline-dock";
 
 	const outcomeBtn = (
 		label: string,
@@ -1778,7 +1758,7 @@ const MapEntityDetail = ({
 		const label = allyMapLabel(rank);
 		return (
 			<div
-				className="soteria-elevated-card"
+				className="lifeline-elevated-card"
 				style={{
 					...cardSurface,
 					padding: sp.md,
@@ -1849,7 +1829,7 @@ const MapEntityDetail = ({
 
 	return (
 		<div
-			className="soteria-elevated-card"
+			className="lifeline-elevated-card"
 			style={{
 				...cardSurface,
 				padding: sp.md,
@@ -1928,17 +1908,16 @@ const IncidentPanelHeader = ({
 	incident: Incident;
 	onAdvance: () => void;
 }) => {
-	const typeColor = TYPE_COLOR[incident.type];
 	const urgent = TYPE_PRIORITY[incident.type] <= 2;
 	const elapsed = formatElapsed(incident.receivedAt);
 
 	return (
 		<div
-			className="soteria-incident-header"
+			className="lifeline-incident-header"
 			style={{
 				padding: sp.md,
-				borderLeft: `3px solid ${typeColor}`,
-				...({ "--incident-glow": `${typeColor}22` } as CSSProperties),
+				borderLeft: `3px solid ${INCIDENT_VICTIM_COLOR}`,
+				...({ "--incident-glow": `${INCIDENT_VICTIM_COLOR}22` } as CSSProperties),
 			}}
 		>
 			<div
@@ -2020,7 +1999,7 @@ const AllyPanel = ({
 }) => {
 	return (
 		<div
-			className="soteria-panel"
+			className="lifeline-panel"
 			style={{ ...panelFrame("right"), display: "flex", flexDirection: "column" }}
 		>
 			<IncidentPanelHeader incident={incident} onAdvance={onAdvance} />
@@ -2130,7 +2109,7 @@ const AllyHeroCard = ({
 	onSelect: () => void;
 }) => (
 	<div
-		className="soteria-elevated-card"
+		className="lifeline-elevated-card"
 		style={{
 			...cardSurface,
 			background: focused || active ? "rgba(26, 30, 38, 0.95)" : "rgba(18, 21, 27, 0.88)",
@@ -2357,7 +2336,7 @@ const ServiceRow = ({
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
-export const SoteriaMap = () => {
+export const LifelineMap = () => {
 	const mapRef = useRef<MapRef>(null);
 	const selectedIdRef = useRef<string | null>(null);
 	const dialAbortRef = useRef<AbortController | null>(null);
