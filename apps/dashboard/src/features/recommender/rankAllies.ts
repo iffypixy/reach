@@ -36,7 +36,8 @@ export const rankAllies = (
 	pool: Ally[],
 	pathDistanceKmByAllyId?: Readonly<Record<string, number>>,
 ): RankedAlly[] => {
-	const pathOnly = pathDistanceKmByAllyId != null;
+	const pathOnly =
+		pathDistanceKmByAllyId != null && Object.keys(pathDistanceKmByAllyId).length > 0;
 	const scored = pool
 		.map((ally) => {
 			if (pathOnly && pathDistanceKmByAllyId[ally.id] == null) return null;

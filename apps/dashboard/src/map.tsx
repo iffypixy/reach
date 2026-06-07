@@ -280,7 +280,7 @@ const allyRoleLabel = (ally: Ally, certs: MatchedCert[]): string => {
 };
 
 const routeKey = (from: [number, number], to: [number, number], profile: string) =>
-	`${from[0].toFixed(4)},${from[1].toFixed(4)};${to[0].toFixed(4)},${to[1].toFixed(4)};${profile}`;
+	`${from[0].toFixed(4)},${from[1].toFixed(4)};${to[0].toFixed(4)},${to[1].toFixed(4)};${profile};full`;
 
 function haversineM([lng1, lat1]: [number, number], [lng2, lat2]: [number, number]): number {
 	const R = 6_371_000;
@@ -292,14 +292,13 @@ function haversineM([lng1, lat1]: [number, number], [lng2, lat2]: [number, numbe
 	return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const isValidDrivingRoute = (
+const isValidRouteGeometry = (
 	route: RouteData,
 	from: [number, number],
 	to: [number, number],
 ): boolean => {
 	if (route.coords.length < 2) return false;
 	// a 2-point route over a real distance means Mapbox fell back to a straight line
-	// (failed to route) — reject it; otherwise trust the road geometry as-is.
 	if (route.coords.length === 2 && haversineM(from, to) > 400) return false;
 	return true;
 };
@@ -310,9 +309,10 @@ async function fetchRoute(
 	profile: "walking" | "driving",
 	token: string,
 ): Promise<RouteData | null> {
-	const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${from[0]},${from[1]};${to[0]},${to[1]}?geometries=geojson&access_token=${token}`;
+	const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${from[0]},${from[1]};${to[0]},${to[1]}?geometries=geojson&overview=full&radiuses=unlimited;unlimited&access_token=${token}`;
 	try {
 		const res = await fetch(url);
+		if (!res.ok) return null;
 		const json = (await res.json()) as {
 			routes?: Array<{
 				geometry: { coordinates: [number, number][] };
@@ -327,12 +327,10 @@ async function fetchRoute(
 			distanceM: route.distance,
 			durationS: route.duration,
 		};
-		if (profile === "driving" && !isValidDrivingRoute(data, from, to)) return null;
+		if (!isValidRouteGeometry(data, from, to)) return null;
 		return data;
 	} catch {
-		if (profile === "driving") return null;
-		const d = haversineM(from, to);
-		return { coords: [from, to], distanceM: d, durationS: d / 1.4 };
+		return null;
 	}
 }
 
@@ -354,7 +352,7 @@ async function resolveServiceRoute(
 	for (const from of serviceRouteOrigins(svc, incident)) {
 		const key = routeKey(from, incident, "driving");
 		const cached = routeCache.get(key);
-		if (cached && isValidDrivingRoute(cached, from, incident)) return cached;
+		if (cached && isValidRouteGeometry(cached, from, incident)) return cached;
 		const data = await fetchRoute(from, incident, "driving", token);
 		if (!data) continue;
 		routeCache.set(key, data);
@@ -395,12 +393,11 @@ function interpolateRoute(coords: [number, number][], t: number): [number, numbe
 	let totalLen = 0;
 	const segLens: number[] = [];
 	for (let i = 1; i < coords.length; i++) {
-		const dx = coords[i][0] - coords[i - 1][0];
-		const dy = coords[i][1] - coords[i - 1][1];
-		const len = Math.sqrt(dx * dx + dy * dy);
+		const len = haversineM(coords[i - 1], coords[i]);
 		segLens.push(len);
 		totalLen += len;
 	}
+	if (totalLen <= 0) return coords[0];
 	let acc = 0;
 	const target = t * totalLen;
 	for (let i = 0; i < segLens.length; i++) {
@@ -1160,38 +1157,35 @@ const RouteLayer = ({
 		(): GeoJSON.FeatureCollection => ({
 			type: "FeatureCollection",
 			features: [
-				...allies.map((ally, rank) => ({
-					type: "Feature" as const,
-					geometry: {
-						type: "LineString" as const,
-						coordinates: allyRoutes[ally.id]?.coords ?? [ally.coords, incident.coords],
-					},
-					properties: {
-						routeType: "ally",
-						rank,
-						response: allyResponseCode(allyStatuses[ally.id]),
-					},
-				})),
-				...services.map((svc) => ({
-					type: "Feature" as const,
-					geometry: {
-						type: "LineString" as const,
-						coordinates: serviceRoutes[svc.id]?.coords ?? [
-							tupleFromCoord(
-								sanitizeServiceOrigin(
-									coordFromTuple(svc.coords),
-									coordFromTuple(incident.coords),
-									svc.type,
-								),
-							),
-							incident.coords,
-						],
-					},
-					properties: { routeType: "service", svcType: svc.type },
-				})),
+				...allies.flatMap((ally, rank) => {
+					const coords = allyRoutes[ally.id]?.coords;
+					if (!coords || coords.length < 2) return [];
+					return [
+						{
+							type: "Feature" as const,
+							geometry: { type: "LineString" as const, coordinates: coords },
+							properties: {
+								routeType: "ally",
+								rank,
+								response: allyResponseCode(allyStatuses[ally.id]),
+							},
+						},
+					];
+				}),
+				...services.flatMap((svc) => {
+					const coords = serviceRoutes[svc.id]?.coords;
+					if (!coords || coords.length < 2) return [];
+					return [
+						{
+							type: "Feature" as const,
+							geometry: { type: "LineString" as const, coordinates: coords },
+							properties: { routeType: "service", svcType: svc.type },
+						},
+					];
+				}),
 			],
 		}),
-		[allies, allyRoutes, services, serviceRoutes, incident, allyStatuses],
+		[allies, allyRoutes, services, serviceRoutes],
 	);
 
 	const allyLineWidth = 2;
@@ -1890,7 +1884,10 @@ export const SoteriaMap = () => {
 
 		const applyPathRanking = () => {
 			if (selectedIdRef.current !== selectedId) return;
-			const ranked = rankAllies(incident, allyPool, pathKmByAllyId);
+			const ranked =
+				Object.keys(pathKmByAllyId).length > 0
+					? rankAllies(incident, allyPool, pathKmByAllyId)
+					: rankAllies(incident, allyPool);
 			setRankedAllies(ranked);
 			const routes: Record<string, RouteData> = {};
 			for (const { ally } of ranked) {
